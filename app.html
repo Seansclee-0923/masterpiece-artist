@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Masterpiece & Artist</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Masterpiece">
+<meta name="theme-color" content="#0a0a0e">
+<style>
+:root{
+  --bg:#0a0a0e; --bg2:#111116; --bg3:#18181f; --card:#1c1c26;
+  --border:#28283a; --text:#e8e8f0; --text2:#8888aa; --text3:#44445a;
+  --accent:#a78bfa; --accent2:#7c3aed; --gold:#f59e0b;
+  --green:#4ade80; --blue:#60a5fa; --orange:#fb923c; --red:#f87171;
+  --r:14px; --ht:56px; --nb:66px;
+  --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo',sans-serif;}
+body{padding-top:calc(var(--ht)+var(--st));padding-bottom:calc(var(--nb)+var(--sb));overflow-y:auto;overscroll-behavior:none;}
+.hdr{position:fixed;top:0;left:0;right:0;z-index:200;height:calc(var(--ht)+var(--st));padding-top:var(--st);
+  background:rgba(10,10,14,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding-left:18px;padding-right:18px;gap:8px;}
+.hdr-logo{font-size:1.05rem;font-weight:900;letter-spacing:-.3px;}
+.hdr-logo .m{color:var(--accent);} .hdr-logo .a{color:var(--gold);}
+.hdr-badge{margin-left:auto;font-size:.68rem;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;}
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:200;height:calc(var(--nb)+var(--sb));padding-bottom:var(--sb);
+  background:rgba(10,10,14,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:none;border:none;color:var(--text2);cursor:pointer;gap:3px;padding:6px 0;}
+.nb.on{color:var(--accent);} .nb-i{font-size:1.2rem;line-height:1;} .nb-l{font-size:.58rem;font-weight:600;}
+.tab{display:none;} .tab.on{display:block;}
+.sec-title{font-size:.72rem;font-weight:700;color:var(--text2);letter-spacing:.6px;text-transform:uppercase;padding:0 16px;margin:18px 0 10px;}
+.hero{margin:16px;padding:22px 20px;background:linear-gradient(135deg,#1a0e38,#0e1a30,#0a0a14);border:1px solid var(--border);border-radius:18px;position:relative;overflow:hidden;}
+.hero-greeting{font-size:.72rem;color:var(--text2);margin-bottom:6px;}
+.hero-title{font-size:1.2rem;font-weight:900;line-height:1.4;margin-bottom:14px;}
+.hero-title .hl{color:var(--accent);}
+.hero-stats{display:flex;} .hs{flex:1;text-align:center;border-right:1px solid var(--border);}
+.hs:last-child{border-right:none;} .hs-num{font-size:1.35rem;font-weight:900;color:var(--accent);} .hs-label{font-size:.6rem;color:var(--text2);margin-top:2px;}
+.today-card{margin:0 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:0;cursor:pointer;overflow:hidden;}
+.today-img{width:100%;height:150px;object-fit:cover;display:block;background:var(--bg3);}
+.today-body{padding:14px 16px;}
+.today-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.today-label{font-size:.66rem;font-weight:700;color:var(--gold);letter-spacing:.5px;}
+.today-refresh{margin-left:auto;font-size:.72rem;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;}
+.today-movement{font-size:.65rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;}
+.today-title{font-size:1.05rem;font-weight:900;line-height:1.3;margin-bottom:3px;}
+.today-artist{font-size:.78rem;color:var(--gold);margin-bottom:8px;}
+.today-summary{font-size:.76rem;color:var(--text2);line-height:1.6;}
+.qs-input{width:calc(100% - 32px);margin:0 16px;display:block;background:var(--bg3);border:1.5px solid var(--border);border-radius:50px;padding:12px 20px;font-size:.9rem;color:var(--text);outline:none;font-family:inherit;}
+.qs-input:focus{border-color:var(--accent);} .qs-input::placeholder{color:var(--text2);}
+.frow{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 16px 10px;white-space:nowrap;}
+.frow::-webkit-scrollbar{display:none;}
+.fchip{display:inline-block;padding:6px 13px;border-radius:99px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text2);font-size:.73rem;cursor:pointer;margin-right:6px;}
+.fchip.on{color:#fff;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;}
+.gcard{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;}
+.gcard img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--bg3);}
+.gcard-info{padding:8px 9px;}
+.gcard-title{font-size:.76rem;font-weight:700;line-height:1.3;}
+.gcard-sub{font-size:.66rem;color:var(--accent);margin-top:3px;}
+.plist{padding:0 16px;display:flex;flex-direction:column;gap:8px;}
+.prow{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 12px;cursor:pointer;}
+.prow img{width:50px;height:50px;border-radius:50%;object-fit:cover;object-position:top;background:var(--bg3);flex-shrink:0;}
+.prow-name{font-size:.86rem;font-weight:700;} .prow-meta{font-size:.7rem;color:var(--text2);margin-top:2px;}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.62rem;font-weight:600;background:var(--bg3);color:var(--text2);margin-top:4px;}
+.list-empty{text-align:center;padding:40px 20px;color:var(--text2);font-size:.85rem;}
+.visit-list{padding:0 16px;display:flex;flex-direction:column;gap:8px;}
+.visit-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;cursor:pointer;}
+.vi-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.vi-title{font-size:.85rem;font-weight:700;color:var(--text);flex:1;}
+.vi-date{font-size:.68rem;color:var(--text2);white-space:nowrap;}
+.vi-museum{font-size:.72rem;color:var(--accent);}
+.vi-memo{font-size:.72rem;color:var(--text2);margin-top:4px;}
+.timeline-wrap{padding:0 0 24px;}
+.era-header{padding:20px 16px 8px;display:flex;align-items:center;gap:10px;}
+.era-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.era-label{font-size:.76rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;}
+.era-years{font-size:.66rem;color:var(--text2);margin-left:auto;}
+.tl-item{margin:0 16px 8px;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:10px 12px;cursor:pointer;}
+.tl-item.hist{border-left-color:var(--gold);cursor:default;}
+.tl-year{font-size:.62rem;font-weight:800;color:var(--accent);}
+.tl-item.hist .tl-year{color:var(--gold);}
+.tl-name{font-size:.82rem;font-weight:700;margin-top:2px;}
+.tl-desc{font-size:.72rem;color:var(--text2);margin-top:3px;line-height:1.5;}
+.form-group{margin:0 16px 14px;} .form-label{font-size:.75rem;font-weight:700;color:var(--text2);margin-bottom:6px;display:block;}
+.form-input{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-size:.85rem;color:var(--text);outline:none;font-family:inherit;}
+.form-input:focus{border-color:var(--accent);}
+textarea.form-input{resize:none;min-height:70px;}
+.btn{border:none;border-radius:50px;padding:11px 18px;font-size:.83rem;font-weight:700;cursor:pointer;}
+.btn-primary{background:var(--accent2);color:#fff;flex:1;}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text);flex:1;}
+.btn-green{background:rgba(74,222,128,.15);border:1.5px solid var(--green);color:var(--green);flex:1;}
+.row{display:flex;gap:8px;margin:0 16px;}
+.panel-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:flex-end;}
+.panel-bg.on{display:flex;}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-height:86vh;overflow-y:auto;padding:0 18px calc(20px + var(--sb));}
+.panel-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:14px auto;}
+.panel-img{width:calc(100% + 36px);margin:0 -18px 14px;max-height:260px;object-fit:cover;display:block;background:var(--bg3);}
+.panel-mov{font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;}
+.panel-title{font-size:1.15rem;font-weight:900;line-height:1.3;margin-bottom:3px;}
+.panel-orig{font-size:.75rem;color:var(--text2);margin-bottom:10px;}
+.panel-artist{font-size:.85rem;font-weight:700;color:var(--gold);margin-bottom:12px;cursor:pointer;}
+.panel-meta{font-size:.75rem;color:var(--text2);line-height:1.7;background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:12px;}
+.panel-sec{margin-bottom:12px;}
+.panel-sec-t{font-size:.68rem;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;}
+.panel-sec-b{font-size:.8rem;color:var(--text);line-height:1.7;}
+.panel-hist{background:var(--bg3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:9px 11px;margin-top:6px;}
+.ppoints{list-style:none;display:flex;flex-direction:column;gap:6px;}
+.ppoints li{display:flex;gap:7px;font-size:.77rem;color:var(--text);line-height:1.5;}
+.ppoints li::before{content:'•';color:var(--accent);flex-shrink:0;}
+.tags-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.close-btn{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:50px;padding:10px;font-size:.84rem;font-weight:700;color:var(--text);cursor:pointer;margin-top:8px;}
+.needs-enrich{background:rgba(245,158,11,.12);border:1px solid var(--gold);border-radius:8px;padding:9px 11px;font-size:.72rem;color:var(--gold);margin-bottom:12px;}
+.memo-area{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:12px;font-size:.82rem;color:var(--text);outline:none;resize:none;min-height:70px;font-family:inherit;margin-top:8px;}
+.toast{position:fixed;bottom:calc(var(--nb)+var(--sb)+12px);left:50%;transform:translateX(-50%) translateY(20px);background:#222230;border:1px solid var(--border);border-radius:50px;padding:10px 20px;font-size:.82rem;color:var(--text);opacity:0;transition:all .3s;pointer-events:none;z-index:500;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:400;display:none;}
+.modal-bg.on{display:flex;align-items:flex-end;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px 20px calc(20px + var(--sb));}
+.modal-title{font-size:1rem;font-weight:800;color:var(--text);margin-bottom:16px;}
+.detect-hdr{text-align:center;padding:16px;} .detect-hdr h2{font-size:1rem;font-weight:700;margin-bottom:6px;} .detect-hdr p{font-size:.78rem;color:var(--text2);line-height:1.6;}
+.apibox{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px;margin:0 16px 14px;}
+.apibox label{font-size:.76rem;color:var(--text2);display:block;margin-bottom:7px;}
+.apirow{display:flex;gap:8px;}
+.apirow input{flex:1;padding:9px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.8rem;outline:none;font-family:monospace;}
+.savebtn{padding:9px 14px;background:var(--accent2);color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;}
+.upload-area{margin:0 16px 10px;border:2px dashed var(--border);border-radius:var(--r);padding:34px 16px;text-align:center;cursor:pointer;background:var(--bg2);position:relative;}
+.upload-area .uico{font-size:2.2rem;margin-bottom:8px;}
+.upload-area h3{font-size:.86rem;font-weight:600;margin-bottom:4px;}
+.upload-area p{font-size:.72rem;color:var(--text2);}
+.upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.preview-box{margin:0 16px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px;}
+.preview-box img{width:100%;max-height:220px;object-fit:contain;border-radius:10px;display:block;background:var(--bg3);margin-bottom:10px;}
+.analyze-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent2),#9333ea);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:.88rem;font-weight:700;}
+.result-box{margin:0 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
+.hidden{display:none!important;}
+.export-btn{margin:16px;width:calc(100% - 32px);padding:11px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:.8rem;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo"><span class="m">Masterpiece</span> & <span class="a">Artist</span></div>
+  <div class="hdr-badge" id="hdrBadge"></div>
+</div>
+
+<div class="bnav">
+  <button class="nb on" data-s="home" onclick="switchTab('home',this)"><span class="nb-i">🏠</span><span class="nb-l">홈</span></button>
+  <button class="nb" data-s="explore" onclick="switchTab('explore',this)"><span class="nb-i">🎨</span><span class="nb-l">탐색</span></button>
+  <button class="nb" data-s="timeline" onclick="switchTab('timeline',this)"><span class="nb-i">📅</span><span class="nb-l">역사</span></button>
+  <button class="nb" data-s="log" onclick="switchTab('log',this)"><span class="nb-i">📝</span><span class="nb-l">기록</span></button>
+  <button class="nb" data-s="detect" onclick="switchTab('detect',this)"><span class="nb-i">🔍</span><span class="nb-l">감지</span></button>
+</div>
+
+<!-- ══════ HOME ══════ -->
+<div id="tab-home" class="tab on">
+  <div class="hero">
+    <div class="hero-greeting">안녕하세요, Sean 👋</div>
+    <div class="hero-title">오늘도 <span class="hl">명화</span>와<br>역사를 이어가요.</div>
+    <div class="hero-stats" id="heroStats"></div>
+  </div>
+  <input class="qs-input" id="homeSearch" type="search" placeholder="🔍  작품명, 화가명, 사조로 검색…" oninput="quickSearch(this.value)" autocomplete="off">
+  <div id="qsResults"></div>
+  <div id="homeDefault">
+    <div class="sec-title">오늘의 작품</div>
+    <div class="today-card" id="todayCard"></div>
+    <div class="sec-title">최근 방문 기록</div>
+    <div id="recentVisits"></div>
+  </div>
+</div>
+
+<!-- ══════ EXPLORE ══════ -->
+<div id="tab-explore" class="tab">
+  <div class="sec-title" style="margin-top:16px">🖌 화가</div>
+  <div class="frow" id="painter-filters"></div>
+  <div class="plist" id="painters-list"></div>
+  <div class="sec-title">🖼 갤러리</div>
+  <div class="grid2" id="gallery-grid"></div>
+</div>
+
+<!-- ══════ TIMELINE ══════ -->
+<div id="tab-timeline" class="tab">
+  <div class="frow" id="timeline-filters" style="margin-top:16px"></div>
+  <div class="timeline-wrap" id="timelineWrap"></div>
+</div>
+
+<!-- ══════ LOG (방문기록 + 새 작품 추가) ══════ -->
+<div id="tab-log" class="tab">
+  <div class="sec-title" style="margin-top:16px">방문 기록</div>
+  <div id="logContent"></div>
+  <div class="sec-title">신규 작품 추가</div>
+  <div class="form-group"><label class="form-label">작품명 (한글)</label><input class="form-input" id="add-title-ko" placeholder="예: 별이 빛나는 밤"></div>
+  <div class="form-group"><label class="form-label">원제</label><input class="form-input" id="add-title-orig" placeholder="예: The Starry Night"></div>
+  <div class="form-group"><label class="form-label">화가명</label><input class="form-input" id="add-artist" placeholder="예: 빈센트 반 고흐"></div>
+  <div class="form-group"><label class="form-label">제작 연도</label><input class="form-input" id="add-year" placeholder="예: 1889"></div>
+  <div class="form-group"><label class="form-label">미술 사조</label><input class="form-input" id="add-movement" placeholder="예: 후기인상주의"></div>
+  <div class="form-group"><label class="form-label">소장 미술관</label><input class="form-input" id="add-museum" placeholder="예: 뉴욕 현대미술관 (MoMA)"></div>
+  <div class="form-group"><label class="form-label">작품 설명</label><textarea class="form-input" id="add-summary" rows="3" placeholder="작품에 대한 간략한 설명…"></textarea></div>
+  <div class="form-group"><label class="form-label">감상 메모</label><textarea class="form-input" id="add-memo" rows="2" placeholder="개인 감상…"></textarea></div>
+  <div class="form-group">
+    <label class="form-label">그림 이미지 (사진 촬영 또는 갤러리에서 선택)</label>
+    <div class="upload-area" id="addImgArea" style="padding:20px 16px;margin:0" ondragover="onAddImgDragOver(event)" ondragleave="onAddImgDragLeave()" ondrop="onAddImgDrop(event)">
+      <input type="file" accept="image/*" id="add-image" onchange="onAddImageSelect(event)">
+      <div class="uico" style="font-size:1.6rem;margin-bottom:4px">📷</div>
+      <p style="font-size:.74rem">탭해서 사진 선택 · 드래그도 가능</p>
+    </div>
+    <div id="add-image-preview" style="margin-top:8px"></div>
+  </div>
+  <div class="row" style="margin-bottom:20px"><button class="btn btn-outline" onclick="clearAddForm()">초기화</button><button class="btn btn-primary" onclick="submitAdd()">추가 ➕</button></div>
+  <button class="export-btn" onclick="exportLocalChanges()">📋 내 변경사항 내보내기 (Claude에게 붙여넣어 archive_db.json에 반영)</button>
+</div>
+
+<!-- ══════ DETECT ══════ -->
+<div id="tab-detect" class="tab">
+  <div class="detect-hdr"><h2>🔍 작품 감지</h2><p>미술관 촬영 사진을 업로드하면 Claude가 작품·화가를 식별하고 해설을 제공합니다.</p></div>
+  <div class="apibox">
+    <label>🔑 Anthropic API Key (이 기기에만 저장됨)</label>
+    <div class="apirow"><input type="password" id="apiKeyInput" placeholder="sk-ant-api..." autocomplete="off"><button class="savebtn" onclick="saveApiKey()">저장</button></div>
+    <span id="keyStatus" style="font-size:.74rem;margin-top:6px;display:block;"></span>
+  </div>
+  <div id="upload-section">
+    <div class="upload-area" id="uploadArea" ondragover="onDragOver(event)" ondragleave="onDragLeave()" ondrop="onDrop(event)">
+      <input type="file" accept="image/*" id="fileInput" onchange="onFileSelect(event)">
+      <div class="uico">🖼</div><h3>이미지를 탭하거나 드래그</h3><p>미술관 사진 · JPG / PNG / WEBP</p>
+    </div>
+  </div>
+  <div id="preview-section" class="hidden">
+    <div class="preview-box"><img id="previewImg" src="" alt="preview">
+      <button class="analyze-btn" id="analyzeBtn" onclick="analyzeArtwork()">🔍 작품 분석하기</button>
+    </div>
+  </div>
+  <div id="result-section" style="margin-bottom:20px"></div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="panel-bg" id="panelBg" onclick="closePanel(event)"><div class="panel" id="panelBody"></div></div>
+<!-- VISIT MODAL -->
+<div class="modal-bg" id="visitModal" onclick="closeVisitModal(event)">
+  <div class="modal">
+    <div class="modal-title">방문 기록 저장</div>
+    <div class="form-group" style="margin-left:0;margin-right:0"><label class="form-label">방문 날짜</label><input class="form-input" id="vm-date" type="date"></div>
+    <div class="form-group" style="margin-left:0;margin-right:0"><label class="form-label">미술관 / 장소</label><input class="form-input" id="vm-museum"></div>
+    <div class="form-group" style="margin-left:0;margin-right:0"><label class="form-label">감상 메모</label><textarea class="form-input" id="vm-memo" rows="3"></textarea></div>
+    <div class="row" style="margin:0"><button class="btn btn-outline" onclick="closeVisitModal()">취소</button><button class="btn btn-green" onclick="saveVisit()">저장 ✓</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════
+   DATA — build.py가 archive_db.json 내용을 이 자리에 주입합니다.
+   런타임 fetch를 쓰지 않으므로 file:// 로 열어도 그대로 동작합니다.
+══════════════════════════════════════════ */
+const BASE_DB = {"_meta": {"version": "1.0", "description": "명화 아카이브 DB — 작품·작가·역사·방문 기록", "last_updated": "2026-06-20", "schema_version": "2.0", "movement_colors": {"르네상스": "#8b5cf6", "바로크": "#3b82f6", "낭만주의": "#f97316", "인상주의": "#10b981", "후기인상주의": "#06b6d4", "상징주의·아르누보": "#ec4899", "표현주의": "#ec4899", "큐비즘": "#eab308", "초현실주의": "#eab308", "추상표현주의": "#dc2626"}, "notes": "2026-07-05: 4개 HTML 분산 데이터를 archive_db.json 단일 소스로 통합. needs_enrichment:true 항목은 research_agent.py로 추가 조사 필요."}, "artworks": [{"id": "mona-lisa-1503", "title": {"original": "Mona Lisa", "ko": "모나리자"}, "artist_id": "leonardo-da-vinci", "year_created": "1503–1519", "medium": "Oil on poplar panel", "dimensions": "77 × 53 cm", "location": {"museum": "루브르 박물관 (Musée du Louvre)", "city": "파리", "country": "프랑스", "room": "살 드 라 자코드 (Room 711)"}, "movement": "르네상스", "description": {"summary": "피렌체의 상인 프란체스코 델 조콘도의 아내 리자 게라르디니로 추정되는 여성의 초상화. 레오나르도가 4년 이상에 걸쳐 완성하였으며, 현재 세계에서 가장 유명한 그림으로 꼽힌다.", "symbolism": "모호한 미소는 인간 감정의 복잡성을 상징한다. 배경의 구불구불한 강과 산은 자연의 무한함을 표현하며, 인물과 배경을 연결하는 구도는 인간과 자연의 조화를 나타낸다.", "technique": "스푸마토(Sfumato) 기법 — 윤곽선 없이 색조를 미묘하게 번지게 하여 대기감과 신비감을 창출. 수십 겹의 얇은 유약층(glazing)으로 피부의 투명한 질감 구현.", "appreciation_points": ["그녀의 눈을 직접 바라보지 않고 측면에서 볼 때 미소가 더 뚜렷하게 보이는 착시 효과", "배경 좌우의 지평선 높이가 미묘하게 달라 원근감에 불안정성을 준다", "눈썹이 없는 이유 — 당시 피렌체 귀부인 사이 눈썹 제거 유행, 또는 세월에 의한 퇴색", "X선 분석 결과 하단에 그려진 흔적이 3개 더 있음 — 레오나르도는 수시로 수정을 거듭했다"], "mysteries": ["모델의 신원 논란 — 리자 게라르디니 외 레오나르도 자신의 여성화 변장설도 제기", "레오나르도가 완성 후에도 의뢰인에게 돌려주지 않고 평생 소지한 이유 불명"]}, "historical_context": {"period": "이탈리아 르네상스 전성기 (High Renaissance)", "year_context": "1503년 피렌체는 메디치 가문의 몰락 이후 공화정 체제. 레오나르도는 피렌체와 밀라노를 오가며 활동 중", "related_events": ["italian-renaissance", "medici-patronage"], "social_background": "상공업으로 부를 축적한 피렌체 중산층이 초상화를 통해 자신의 사회적 지위를 과시하기 시작한 시기. 의뢰인 프란체스코 델 조콘도도 그러한 신흥 부르주아지의 전형."}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["르네상스", "초상화", "이탈리아", "스푸마토", "미스터리"], "archived_date": "2026-06-20", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/402px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg"}, {"id": "night-watch-1642", "title": {"original": "De Nachtwacht", "ko": "야경 (夜警)"}, "artist_id": "rembrandt", "year_created": "1642", "medium": "Oil on canvas", "dimensions": "363 × 437 cm", "location": {"museum": "암스테르담 국립미술관 (Rijksmuseum)", "city": "암스테르담", "country": "네덜란드", "room": "명예의 갤러리 (Gallery of Honour)"}, "movement": "바로크", "description": {"summary": "암스테르담 민병대 대장 프란스 바닝 코크와 대원들의 집단 초상화. 당시 관행이던 정적인 집단 배치를 깨고, 부대가 출동하는 순간의 역동적 장면으로 그려 혁명적 작품으로 평가받는다.", "symbolism": "화면 중앙의 금빛 빛을 받은 소녀는 민병대의 마스코트이자 수호신. 그녀의 허리에 매달린 닭(Klauw)은 민병대의 문장(紋章)을 상징한다.", "technique": "키아로스쿠로(Chiaroscuro) — 강렬한 명암 대비로 빛의 드라마를 연출. 중앙 인물에만 강한 빛을 집중시켜 시선을 유도하고 나머지는 어둠 속에 묻히게 함.", "appreciation_points": ["34명의 인물이 등장하지만 각자의 개성과 표정이 살아있어 생동감 넘침", "원래 더 넓은 캔버스였으나 18세기 이사 과정에서 양측이 잘려나간 상태", "소녀의 치마에 달린 닭발이 민병대 상징 — 숨겨진 시각적 위트", "렘브란트 본인도 군중 속에 그려 넣었다 (뒷편 왼쪽에서 여섯 번째)"], "mysteries": ["의뢰인들이 그림에 불만을 품었다는 설 — 각자 대등하게 그려지길 원했으나 렘브란트가 자신의 예술적 판단을 우선시", "제목 '야경'은 잘못된 명칭 — 18~19세기에 어둡게 변색된 바니시 때문에 밤 장면으로 오인, 실제는 낮 장면"]}, "historical_context": {"period": "네덜란드 황금시대 (Dutch Golden Age)", "year_context": "1642년 네덜란드는 해상 무역으로 전 세계 상권을 장악한 최전성기. 암스테르담은 세계 금융·무역의 중심지로 급부상.", "related_events": ["dutch-golden-age", "thirty-years-war"], "social_background": "당시 네덜란드는 스페인으로부터 독립 직후. 부유한 상인 계층이 민병대를 조직해 도시를 지키는 한편, 집단 초상화로 자신들의 위상을 과시하는 문화가 유행."}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["바로크", "집단초상화", "네덜란드", "키아로스쿠로", "황금시대"], "archived_date": "2026-06-20", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Rembrandt_van_Rijn_-_De_Nachtwacht.jpg/800px-Rembrandt_van_Rijn_-_De_Nachtwacht.jpg"}, {"id": "girl-pearl-earring-1665", "title": {"original": "Meisje met de parel", "ko": "진주 귀걸이를 한 소녀"}, "artist_id": "vermeer", "year_created": "1665년경", "medium": "Oil on canvas", "dimensions": "44.5 × 39 cm", "location": {"museum": "마우리츠하이스 왕립미술관 (Mauritshuis)", "city": "헤이그", "country": "네덜란드", "room": "15번 전시실"}, "movement": "바로크", "description": {"summary": "'네덜란드의 모나리자'라 불리는 걸작. 어두운 배경에서 고개를 돌려 관람자를 바라보는 순간을 포착한 트로니(Tronie, 익명의 인물 습작). 누구인지 알 수 없는 신원과 촉촉한 입술·반짝이는 시선이 수백 년간 관람자를 매료시켜왔다.", "symbolism": "진주는 순수함과 부의 상징. 터키식 두건은 이국적 정취를 더해 당시 유럽에서 유행한 오리엔탈리즘 취향을 반영. 칠흑 같은 배경은 빛을 받은 얼굴을 더욱 부각시킨다.", "technique": "빛의 마술사 페르메이르의 진수 — 진주 귀걸이의 광택을 단 두 개의 붓 터치(흰색 하이라이트·반사광)로 구현. 얇은 글레이징 층으로 피부의 생동감 표현.", "appreciation_points": ["진주 귀걸이가 실제 진주인지 유리 구슬인지 아직도 논란 — 크기와 빛 반사 방식이 진짜 진주와 다르다는 분석", "입술이 살짝 열려 있어 막 무언가를 말하려는 듯한 순간을 포착", "소녀의 정체 — 페르메이르의 딸 마리아, 아니면 후원자 루펜의 딸이라는 설이 공존", "X선 분석으로 처음엔 속눈썹이 그려졌다가 제거됐음이 확인"], "mysteries": []}, "historical_context": {"period": "네덜란드 황금시대 (Dutch Golden Age)", "year_context": "델프트에서 은둔하듯 작업한 페르메이르는 생전 37점의 작품만 남겼다. 사후 200년간 거의 잊혔다가 19세기 미술비평가 토레-뷔르거에 의해 재발견.", "related_events": ["dutch-golden-age"], "social_background": "델프트의 소시민 가정 출신인 페르메이르는 대부분 자신의 집 안에서 빛이 들어오는 창가를 배경으로 작품을 제작. 의뢰인 루펜의 후원이 없었다면 생계 유지도 어려웠을 것."}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["바로크", "트로니", "네덜란드", "빛", "황금시대", "페르메이르"], "archived_date": "2026-06-20", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/1665_Girl_with_a_Pearl_Earring.jpg/400px-1665_Girl_with_a_Pearl_Earring.jpg"}, {"id": "third-of-may-1814", "title": {"original": "El tres de mayo de 1808", "ko": "1808년 5월 3일"}, "artist_id": "goya", "year_created": "1814", "medium": "Oil on canvas", "dimensions": "268 × 347 cm", "location": {"museum": "프라도 미술관 (Museo del Prado)", "city": "마드리드", "country": "스페인", "room": "064번 전시실"}, "movement": "낭만주의", "description": {"summary": "나폴레옹 군이 스페인 민중 봉기 참가자들을 처형하는 장면. 근대 전쟁화의 원형으로 평가되며, 마네·피카소에게 직접적 영향을 끼쳤다. 역사상 전쟁의 공포와 잔혹함을 가장 적나라하게 표현한 작품 중 하나.", "symbolism": "흰 셔츠를 입은 남자의 두 팔은 십자가에 못 박힌 예수를 연상시켜 순교를 상징. 손바닥의 성흔(stigmata)도 의도적으로 표현됐다는 해석. 총살부대 병사들은 얼굴이 없어 개인이 아닌 폭력의 기계를 상징.", "technique": "거친 붓 터치와 강렬한 명암 — 빛을 발하는 흰 셔츠가 어둠 속에서 유일한 광원처럼 작용. 즉흥적이고 격정적인 필치가 공포와 절박함을 증폭.", "appreciation_points": ["처형당하는 자들의 얼굴은 공포·체념·저항 등 다양한 감정을 각각 담고 있다", "총살부대의 얼굴 없음 — 익명성은 국가 폭력의 비인간성을 극대화", "빛을 발하는 흰 셔츠 한 점이 전체 화면의 중심 — 희생자의 숭고함", "마네의 '막시밀리안 황제의 처형', 피카소의 '게르니카'에 직접적 영향"], "mysteries": []}, "historical_context": {"period": "나폴레옹 전쟁기", "year_context": "1808년 나폴레옹이 스페인을 침공하고 형 조제프를 왕으로 앉힌다. 마드리드 시민들이 5월 2일 봉기를 일으켰고 이튿날 나폴레옹 군은 시민들을 무차별 처형. 고야는 6년 후 이 장면을 기억에서 재구성해 그렸다.", "related_events": ["napoleonic-wars", "peninsular-war"], "social_background": "고야는 처음에는 계몽주의 이상에 공감하며 나폴레옹을 지지했으나, 전쟁의 참혹함을 목격하고 근본적으로 전환. '전쟁의 참화(Los Desastres de la Guerra)' 판화 연작도 같은 시기 제작."}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["낭만주의", "전쟁화", "스페인", "나폴레옹", "반전", "고야"], "archived_date": "2026-06-20", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/El_Tres_de_Mayo%2C_by_Francisco_de_Goya%2C_from_Prado_in_Google_Earth.jpg/800px-El_Tres_de_Mayo%2C_by_Francisco_de_Goya%2C_from_Prado_in_Google_Earth.jpg"}, {"id": "water-lilies-1906", "title": {"original": "Les Nymphéas", "ko": "수련"}, "artist_id": "monet", "year_created": "1896–1926 (연작)", "medium": "Oil on canvas", "dimensions": "다양 (대형 연작 기준 최대 200 × 1275 cm)", "location": {"museum": "오랑주리 미술관 (Musée de l'Orangerie)", "city": "파리", "country": "프랑스", "room": "타원형 전시실 1·2호"}, "movement": "인상주의", "description": {"summary": "모네가 지베르니 자택 정원의 수련 연못을 약 30년에 걸쳐 그린 250여 점의 대연작. 말년 백내장으로 시력이 급격히 저하된 상태에서도 제작을 멈추지 않았다. 오랑주리 미술관의 대형 파노라마 패널(8점)은 모네가 직접 국가에 헌정한 작품.", "symbolism": "수면에 비친 하늘과 구름 — 실제와 반영의 경계를 허물어 현실과 비현실의 경계에 관한 철학적 명상. 고정된 시점 없이 360도를 에워싸는 파노라마는 관람자를 자연 속에 완전히 몰입시킨다.", "technique": "두텁고 자유로운 임파스토(Impasto) 기법 — 말년 작품일수록 형태보다 색채·빛·분위기만 남는다. 물감을 두껍게 쌓아 질감 자체가 빛의 진동처럼 느껴지게 함.", "appreciation_points": ["오랑주리 타원형 방에 들어서면 수면이 방 전체를 에워싸 수중에 있는 듯한 감각", "백내장 진행에 따라 색조가 붉어지고 윤곽이 흐려지는 과정이 연작 전체에 기록됨", "추상표현주의 화가들(폴록, 드 쿠닝)이 수련에서 직접 영감을 받았다고 고백", "지베르니 정원 자체가 모네가 설계한 '살아있는 작품'"], "mysteries": []}, "historical_context": {"period": "벨 에포크 (Belle Époque) ~ 제1차 세계대전", "year_context": "모네는 1차 대전 중에도 지베르니 정원에서 작업을 계속했다. 1918년 종전을 기념해 수련 대작을 국가에 헌정하겠다고 선언. 오랑주리 설치는 모네 사망 직전인 1927년 완성.", "related_events": ["belle-epoque", "world-war-i"], "social_background": "인상주의가 처음엔 조롱받았으나 1880년대 이후 파리 미술계 주류로 자리잡는다. 모네는 말년엔 경제적으로 풍족했지만 아내·아들의 죽음과 시력 악화로 심리적 고통 속에서 작업."}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["인상주의", "연작", "프랑스", "자연", "빛", "모네"], "archived_date": "2026-06-20", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Claude_Monet_-_Water_Lilies_-_1906%2C_Ryerson.jpg/800px-Claude_Monet_-_Water_Lilies_-_1906%2C_Ryerson.jpg"}, {"id": "starry-night-1889", "title": {"original": "The Starry Night", "ko": "별이 빛나는 밤"}, "artist_id": "van-gogh", "year_created": "1889", "medium": "Oil on canvas", "dimensions": "73.7 × 92.1 cm", "location": {"museum": "뉴욕 현대미술관 (MoMA)", "city": "뉴욕", "country": "미국", "room": "5층 영구 소장품관"}, "movement": "후기인상주의", "description": {"summary": "고흐가 정신병원(생 폴 드 무졸, 생 레미)에 자발적으로 입원 중 창문 밖 새벽 풍경을 보고 그린 작품. 소용돌이치는 하늘과 빛나는 별들, 고요한 마을의 대비가 내면의 격동과 평정 사이 갈등을 표현한다.", "symbolism": "소용돌이치는 하늘 — 고흐 자신의 감정적 격동 표현. 화면 왼편 사이프러스 나무는 당시 묘지 나무로 죽음·영원을 상징. 밝게 빛나는 달과 별은 영적 초월에 대한 열망. 마을 교회의 첨탑은 고향 네덜란드를 그리워하는 마음.", "technique": "터치 하나하나를 눈에 띄게 두껍고 역동적으로 남기는 임파스토 — 하늘의 소용돌이는 실제 대기의 와류 패턴(난류)과 유사하다는 유체역학 연구 결과가 있음.", "appreciation_points": ["2006년 NASA 연구에서 하늘의 소용돌이 패턴이 콜모고로프 난류 방정식과 일치함을 확인", "실제 창문에서 보이지 않는 마을 '생 레미'를 기억과 상상으로 합성해 그렸다", "금성(새벽별)이 오른쪽 위 가장 큰 별로 그려짐 — 천문학적으로 검증 완료", "고흐는 이 그림을 '실패작'으로 여겼다 — 동생 테오에게 보낸 편지에서 실망감 표현"], "mysteries": []}, "historical_context": {"period": "후기 19세기 유럽", "year_context": "고흐는 1888년 가울과의 다툼 끝에 자신의 귀를 자르고 정신과 치료를 받기 시작. 1889년 5월 생 레미 정신병원에 스스로 입원하여 '별이 빛나는 밤'을 포함해 150점 이상을 그렸다.", "related_events": ["post-impressionism-movement", "belle-epoque"], "social_background": "당시 예술계에서 전혀 인정받지 못했던 고흐는 생전 단 1점의 그림을 팔았을 뿐. 정신 질환과 생계 문제로 고통받으며 동생 테오의 경제적 지원에만 의존. 1890년 37세에 생을 마감."}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["후기인상주의", "풍경화", "네덜란드", "정신", "별", "고흐"], "archived_date": "2026-06-20", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/800px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg"}, {"id": "kiss-klimt-1908", "title": {"original": "Der Kuss", "ko": "키스"}, "artist_id": "klimt", "year_created": "1907–1908", "medium": "Oil and gold leaf on canvas", "dimensions": "180 × 180 cm", "location": {"museum": "벨베데레 궁전 (Österreichische Galerie Belvedere)", "city": "빈", "country": "오스트리아", "room": "1층 황금 홀"}, "movement": "상징주의·아르누보", "description": {"summary": "금색 광채 속에 서로를 껴안고 키스하는 연인의 모습. 클림트의 '황금 시기' 최고 걸작으로, 빈 분리파(Wiener Secession) 운동의 정수를 담았다. 에로스와 타나토스(사랑과 죽음)의 공존을 표현한다는 해석이 지배적.", "symbolism": "남성의 로브에 그려진 검은 직사각형은 죽음·이성·남성성, 여성의 로브에 그려진 꽃무늬는 생명·감성·여성성을 상징. 두 사람을 감싼 금빛 후광은 사랑의 신성함. 절벽 끝에 서 있는 연인 — 황홀경과 죽음의 경계.", "technique": "실제 금박(Gold leaf) 과 은박 사용 — 비잔틴 모자이크와 일본 화풍에서 영감. 이집트 미술의 정면성과 평면성도 결합. 인물 주변의 배경은 완전히 금색으로 처리해 신성한 초월적 공간감 부여.", "appreciation_points": ["실제 금박이라 조명에 따라 그림이 살아 움직이는 듯 빛난다", "여성의 발 아래 꽃밭 — 실제 절벽 끝에 아슬아슬하게 피어난 꽃들", "남녀 복식 패턴의 대비(직사각형 vs 꽃무늬)가 성별 이분법적 상징체계를 구현", "클림트 자신과 연인 에밀리 플뢰게를 모델로 그렸다는 설이 유력"], "mysteries": []}, "historical_context": {"period": "세기말 빈 (Fin-de-siècle Vienna)", "year_context": "1907년 오스트리아-헝가리 제국의 마지막 전성기. 빈은 프로이트의 정신분석학, 비트겐슈타인의 철학, 쇤베르크의 무조음악 등이 동시에 폭발한 '세기말 문화'의 중심지.", "related_events": ["austro-hungarian-empire", "vienna-secession", "fin-de-siecle"], "social_background": "클림트는 빈 보수 예술계에 반기를 들고 '빈 분리파'를 결성. '예술을 각 시대에, 각 시대에 자유를(Der Zeit ihre Kunst, der Kunst ihre Freiheit)'을 모토로 내걸었다. '키스'는 이 시기 절정의 작품."}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["상징주의", "아르누보", "오스트리아", "금박", "사랑", "클림트"], "archived_date": "2026-06-20", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg/600px-The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg"}, {"id": "scream-1893", "title": {"original": "Skrik", "ko": "절규"}, "artist_id": "munch", "year_created": "1893 (총 4개 버전)", "medium": "Oil, tempera, and crayon on cardboard (1893 버전)", "dimensions": "91 × 73.5 cm", "location": {"museum": "노르웨이 국립미술관 (Nasjonalmuseet)", "city": "오슬로", "country": "노르웨이", "room": "2층 19세기관"}, "movement": "표현주의", "description": {"summary": "현대인의 실존적 불안과 공포를 가장 강렬하게 표현한 아이콘. 뭉크 자신의 일기에 '나는 자연의 커다란 절규를 느꼈다'고 기록. 왜곡된 인물과 불꽃처럼 소용돌이치는 하늘이 내면 공포의 가시화.", "symbolism": "양손으로 뺨을 감싸 쥔 해골 같은 얼굴 — 실존적 공포의 보편적 아이콘. 핏빛 노을 — 뭉크가 실제 경험한 비정상적 황혼 (크라카타우 화산 폭발로 인한 대기 현상이라는 설). 다리 위를 걷는 두 친구 — 무심한 세계 앞에 홀로 선 개인.", "technique": "선묘와 색면을 혼합한 독특한 기법 — 파도치는 곡선들이 화면 전체를 뒤덮어 불안감을 극대화. 인물은 배경과 하나로 녹아들어 환경에 압도된 존재감.", "appreciation_points": ["1893·1895년 파스텔 버전·1910·1917년 총 4개 버전 존재 — 각 버전이 뉘앙스 다름", "1893년 원본에 연필로 '미친 사람만이 이걸 그릴 수 있다'는 낙서가 있었으나 뭉크 자신이 쓴 것으로 최근 확인", "2004년 오슬로 미술관에서 무장 강도에 도난당했다가 3개월 후 회수", "이모티콘과 팝 문화의 원조 — 앤디 워홀이 실크스크린으로 재해석"], "mysteries": []}, "historical_context": {"period": "19세기 말 유럽", "year_context": "1890년대 유럽은 산업화·도시화의 급격한 변화로 개인의 소외와 불안이 새로운 사회 문제로 대두. 프로이트의 무의식 개념(1899년)이 등장하기 직전 시기.", "related_events": ["industrialization", "krakatau-eruption-1883"], "social_background": "뭉크는 어린 시절 어머니와 누나를 결핵으로 잃고 평생 죽음과 질병에 대한 공포를 안고 살았다. '절규'를 포함한 '생명의 프리즈(Frieze of Life)' 연작은 사랑·불안·죽음을 주제로 한 자전적 대서사."}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["표현주의", "불안", "노르웨이", "현대성", "아이콘", "뭉크"], "archived_date": "2026-06-20"}, {"id": "guernica-1937", "title": {"original": "Guernica", "ko": "게르니카"}, "artist_id": "picasso", "year_created": "1937", "medium": "Oil on canvas", "dimensions": "349 × 776 cm", "location": {"museum": "레이나 소피아 국립미술관 (Museo Reina Sofía)", "city": "마드리드", "country": "스페인", "room": "206.07호"}, "movement": "큐비즘", "description": {"summary": "스페인 내전 중인 1937년 4월 26일, 나치 독일 공군이 스페인 바스크 지방 소도시 게르니카를 무차별 폭격한 사건을 고발하는 반전 걸작. 흑백·회색만으로 공포와 혼돈을 표현해 20세기 최대의 정치적 예술 작품으로 꼽힌다.", "symbolism": "울부짖는 말 — 고통받는 민중. 부러진 칼을 쥔 죽은 병사 — 패배한 저항의 희망. 죽은 아이를 안고 절규하는 어머니 — 전쟁의 최대 피해자. 황소 — 잔인함과 어둠 (파시즘 해석 지배적). 전구 같은 눈의 램프 — 감시·폭격·계몽의 복합 상징.", "technique": "큐비즘의 다시점(Multi-perspective)으로 공포의 순간을 동시다발적으로 표현. 흑·백·회색 3색만 사용 — 당시 신문 사진과 영화의 흑백 이미지를 연상시켜 다큐멘터리적 사실감 부여.", "appreciation_points": ["나치 장교가 피카소의 스튜디오에서 이 그림의 사진을 보고 '당신이 이걸 그렸냐'고 묻자 피카소 '아니오, 당신들이 그렸소'라고 답했다는 일화", "스페인 독재자 프랑코 집권 기간 동안 뉴욕 MoMA에 보관 — '민주주의 스페인이 올 때까지'라는 피카소의 유언대로 1981년 마드리드 귀환", "유엔 안보리 앞 복제본이 걸려 있어 각국 외교관이 전쟁 결정을 내릴 때마다 마주하게 됨", "349×776cm의 초대형 — 실물 앞에 서면 압도감이 다름"], "mysteries": []}, "historical_context": {"period": "스페인 내전 (1936–1939)", "year_context": "1936년 파시스트 프랑코 장군이 공화국 정부에 쿠데타를 일으켜 내전 발발. 히틀러·무솔리니가 프랑코를 지원. 1937년 4월 게르니카 폭격은 민간인 대상 공중폭격의 첫 사례 중 하나.", "related_events": ["spanish-civil-war", "world-war-ii-prelude", "nazi-germany"], "social_background": "피카소는 당시 파리에 망명 중이었으며 스페인 공화국 정부로부터 파리 만국박람회 스페인관 벽화를 의뢰받은 상태. 게르니카 폭격 소식을 듣고 즉각 주제를 바꿔 이 작품을 6주 만에 완성."}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["큐비즘", "반전", "스페인", "내전", "정치", "피카소"], "archived_date": "2026-06-20", "image": "https://upload.wikimedia.org/wikipedia/en/7/74/PicassoGuernica.jpg"}, {"id": "persistence-of-memory-1931", "title": {"original": "The Persistence of Memory", "ko": "기억의 지속"}, "artist_id": "dali", "year_created": "1931", "medium": "Oil on canvas", "dimensions": "24 × 33 cm", "location": {"museum": "뉴욕 현대미술관 (MoMA)", "city": "뉴욕", "country": "미국", "room": "5층 영구 소장품관"}, "movement": "초현실주의", "description": {"summary": "녹아 흘러내리는 시계들이 펼쳐진 카탈루냐 해안 풍경. 달리가 카망베르 치즈가 녹는 것을 보다 영감을 받아 2시간 만에 그렸다고 전해진다. 아인슈타인 상대성이론 이후 절대적 시간 개념의 붕괴를 시각화한 작품으로 해석된다.", "symbolism": "흘러내리는 시계 — 고정된 객관적 시간의 해체, 꿈속에서 늘어지는 주관적 시간 경험. 개미에 뒤덮인 시계 — 부패·죽음. 기묘한 생물체(달리 자신의 자화상으로 해석) — 무의식. 배경 카탈루냐 해안 절벽은 달리의 고향 카다케스.", "technique": "초현실주의 특유의 '편집증적 비판 방법(Paranoiac-critical method)' — 몽환적 내용을 사진처럼 정교하고 사실적인 필치로 그려 현실과 비현실의 충돌을 극대화.", "appreciation_points": ["24×33cm의 엽서 크기 — 실물을 보면 의외로 작아서 충격적", "달리는 '녹는 시계는 카망베르 치즈가 연상을 불러일으킨 것'이라 설명했으나 프로이트의 무의식 이론과 연결 짓는 해석이 지배적", "1931년 제작 후 3주 만에 갤러리에서 팔렸고 이후 MoMA에 기증", "배경의 카탈루냐 해안은 달리가 평생 떠나지 않으려 했던 고향 — 지도와 대조하면 정확히 일치"], "mysteries": []}, "historical_context": {"period": "전간기 (Interwar Period), 1920–1930년대", "year_context": "1931년 유럽은 대공황의 여파로 경제 붕괴·파시즘 부상의 혼란기. 앙드레 브르통의 초현실주의 선언(1924) 이후 파리 예술계를 지배한 무의식 탐구 운동이 절정.", "related_events": ["interwar-period", "great-depression", "einstein-relativity"], "social_background": "달리는 1929년 갈라(엘레나 디아코노바)와 동거를 시작하며 뮤즈와 매니저를 얻는다. 이 시기 초현실주의 그룹의 핵심 멤버로 활동하며 '가장 초현실적인 초현실주의자'로 부상."}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["초현실주의", "시간", "스페인", "무의식", "꿈", "달리"], "archived_date": "2026-06-20", "image": "https://upload.wikimedia.org/wikipedia/en/d/dd/The_Persistence_of_Memory.jpg"}, {"id": "birth-of-venus-1485", "title": {"original": "The Birth of Venus", "ko": "비너스의 탄생"}, "artist_id": "botticelli", "year_created": "1485", "medium": "", "dimensions": "", "location": {"museum": "우피치 미술관, 피렌체", "city": "", "country": "", "room": ""}, "movement": "르네상스", "description": {"summary": "바다 거품에서 태어난 미의 여신 비너스를 묘사한 대표적 르네상스 회화.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["르네상스"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project_-_edited.jpg/800px-Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project_-_edited.jpg", "needs_enrichment": true}, {"id": "primavera-1482", "title": {"original": "Primavera", "ko": "프리마베라 (봄)"}, "artist_id": "botticelli", "year_created": "1482", "medium": "", "dimensions": "", "location": {"museum": "우피치 미술관, 피렌체", "city": "", "country": "", "room": ""}, "movement": "르네상스", "description": {"summary": "봄의 알레고리. 비너스를 중심으로 신화 속 인물들이 봄의 정원에 등장한다.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["르네상스"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Botticelli-primavera.jpg/800px-Botticelli-primavera.jpg", "needs_enrichment": true}, {"id": "creation-of-adam-1512", "title": {"original": "The Creation of Adam", "ko": "아담의 창조"}, "artist_id": "michelangelo", "year_created": "1512", "medium": "", "dimensions": "", "location": {"museum": "시스티나 성당, 바티칸", "city": "", "country": "", "room": ""}, "movement": "르네상스", "description": {"summary": "하느님과 아담이 손가락을 맞닿는 순간. 4년에 걸쳐 완성한 약 500㎡ 천장화 중 가장 유명한 장면.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["르네상스"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Michelangelo_-_Creation_of_Adam_%28cropped%29.jpg/800px-Michelangelo_-_Creation_of_Adam_%28cropped%29.jpg", "needs_enrichment": true}, {"id": "last-judgment-1541", "title": {"original": "The Last Judgment", "ko": "최후의 심판"}, "artist_id": "michelangelo", "year_created": "1541", "medium": "", "dimensions": "", "location": {"museum": "시스티나 성당, 바티칸", "city": "", "country": "", "room": ""}, "movement": "르네상스", "description": {"summary": "시스티나 성당 제단벽을 장식하는 거대한 프레스코화. 최후의 심판을 웅장하게 표현했다.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["르네상스"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Michelangelo_-_Last_Judgment.jpg/600px-Michelangelo_-_Last_Judgment.jpg", "needs_enrichment": true}, {"id": "ballet-class-1874", "title": {"original": "The Ballet Class", "ko": "무대 위의 발레 수업"}, "artist_id": "degas", "year_created": "1874", "medium": "", "dimensions": "", "location": {"museum": "오르세 미술관, 파리", "city": "", "country": "", "room": ""}, "movement": "인상주의", "description": {"summary": "발레 연습 장면을 위에서 내려다보는 독특한 구도로 포착했다.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["인상주의"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Degas_-_The_Ballet_Class.jpg/600px-Degas_-_The_Ballet_Class.jpg", "needs_enrichment": true}, {"id": "absinthe-1876", "title": {"original": "L'Absinthe", "ko": "압생트"}, "artist_id": "degas", "year_created": "1876", "medium": "", "dimensions": "", "location": {"museum": "오르세 미술관, 파리", "city": "", "country": "", "room": ""}, "movement": "인상주의", "description": {"summary": "카페에서 공허하게 앉아 있는 두 사람의 고독. 파리 근대인의 소외를 포착했다.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["인상주의"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Edgar_Degas_-_In_a_Caf%C3%A9_-_Musee_d%27Orsay.jpg/500px-Edgar_Degas_-_In_a_Caf%C3%A9_-_Musee_d%27Orsay.jpg", "needs_enrichment": true}, {"id": "where-do-we-come-from-1898", "title": {"original": "Where Do We Come From? What Are We? Where Are We Going?", "ko": "우리는 어디서 왔는가?"}, "artist_id": "gauguin", "year_created": "1898", "medium": "", "dimensions": "", "location": {"museum": "보스턴 미술관", "city": "", "country": "", "room": ""}, "movement": "후기인상주의", "description": {"summary": "인류 존재에 대한 철학적 질문을 담은 대작. 탄생, 삶, 죽음의 순환을 표현했다.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["후기인상주의"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Paul_Gauguin_-_D%27ou_venons-nous.jpg/800px-Paul_Gauguin_-_D%27ou_venons-nous.jpg", "needs_enrichment": true}, {"id": "tahitian-women-1891", "title": {"original": "Tahitian Women on the Beach", "ko": "타히티 여인들"}, "artist_id": "gauguin", "year_created": "1891", "medium": "", "dimensions": "", "location": {"museum": "오르세 미술관, 파리", "city": "", "country": "", "room": ""}, "movement": "후기인상주의", "description": {"summary": "타히티 도착 직후 그린 작품. 평면적 형태와 강렬한 색채로 원시주의의 시작을 알렸다.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["후기인상주의"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Paul_Gauguin_-_Tahitian_Women_on_the_Beach.jpg/600px-Paul_Gauguin_-_Tahitian_Women_on_the_Beach.jpg", "needs_enrichment": true}, {"id": "composition-8-1923", "title": {"original": "Composition VIII", "ko": "구성 8번"}, "artist_id": "kandinsky", "year_created": "1923", "medium": "", "dimensions": "", "location": {"museum": "솔로몬 R. 구겐하임 미술관, 뉴욕", "city": "", "country": "", "room": ""}, "movement": "추상표현주의", "description": {"summary": "기하학적 형태와 선, 색채만으로 구성된 추상 작품. 음악처럼 조화를 이룬다.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["추상표현주의"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Vasily_Kandinsky%2C_1923_-_Composition_8%2C_huile_sur_toile%2C_140_cm_x_201_cm%2C_Mus%C3%A9e_Guggenheim%2C_New_York.jpg/800px-Vasily_Kandinsky%2C_1923_-_Composition_8%2C_huile_sur_toile%2C_140_cm_x_201_cm%2C_Mus%C3%A9e_Guggenheim%2C_New_York.jpg", "needs_enrichment": true}, {"id": "improvisation-28-1912", "title": {"original": "Improvisation 28", "ko": "즉흥 28번"}, "artist_id": "kandinsky", "year_created": "1912", "medium": "", "dimensions": "", "location": {"museum": "솔로몬 R. 구겐하임 미술관, 뉴욕", "city": "", "country": "", "room": ""}, "movement": "추상표현주의", "description": {"summary": "음악의 즉흥 연주에서 영감을 받은 추상 회화.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["추상표현주의"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Vassily_Kandinsky%2C_1912_-_Improvisation_28_%28second_version%29.jpg/800px-Vassily_Kandinsky%2C_1912_-_Improvisation_28_%28second_version%29.jpg", "needs_enrichment": true}, {"id": "no-31-1950", "title": {"original": "No. 31", "ko": "No. 31"}, "artist_id": "pollock", "year_created": "1950", "medium": "", "dimensions": "", "location": {"museum": "뉴욕 현대미술관 (MoMA)", "city": "", "country": "", "room": ""}, "movement": "추상표현주의", "description": {"summary": "폴록의 전성기 드리핑 기법이 집약된 대형 작품. 액션 페인팅의 에너지가 느껴진다.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["추상표현주의"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Flickr_-_%E2%80%A6trialsanderrors_-_Jackson_Pollock%2C_One%2C_Number_31%2C_1950%2C_1950.jpg/800px-Flickr_-_%E2%80%A6trialsanderrors_-_Jackson_Pollock%2C_One%2C_Number_31%2C_1950%2C_1950.jpg", "needs_enrichment": true}, {"id": "lavender-mist-1950", "title": {"original": "Lavender Mist", "ko": "라벤더 미스트"}, "artist_id": "pollock", "year_created": "1950", "medium": "", "dimensions": "", "location": {"museum": "내셔널 갤러리 오브 아트, 워싱턴 D.C.", "city": "", "country": "", "room": ""}, "movement": "추상표현주의", "description": {"summary": "라벤더, 파랑, 갈색 색채가 얽힌 드리핑 작품. 폴록 액션 페인팅의 서정적 면모.", "symbolism": "", "technique": "", "appreciation_points": [], "mysteries": []}, "historical_context": {"period": "", "year_context": "", "social_background": ""}, "personal": {"visited": false, "visit_date": null, "museum_visited": null, "memo": ""}, "tags": ["추상표현주의"], "archived_date": "2026-07-05", "image": "https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Lavender_Mist_National_Gallery.jpg/700px-Lavender_Mist_National_Gallery.jpg", "needs_enrichment": true}], "artists": [{"id": "leonardo-da-vinci", "name": {"full": "Leonardo di ser Piero da Vinci", "ko": "레오나르도 다 빈치"}, "born": "1452-04-15", "died": "1519-05-02", "nationality": "이탈리아 (피렌체)", "movement": "르네상스", "bio": {"early_life": "피렌체 인근 빈치 마을 출신. 사생아로 태어나 베로키오 공방에서 도제 수업. 14세에 이미 스승을 능가했다는 일화가 전해진다.", "career": "피렌체·밀라노·로마를 거치며 활동. 화가 외에도 해부학·건축·기계공학·수문학·식물학 등 방대한 분야에서 독보적 업적. 생전에 완성한 회화는 15점 미만으로 알려짐.", "later_life": "1516년 프랑스 국왕 프랑수아 1세의 초청으로 앙부아즈 성 인근 클루 뤼세 성에 거주. 모나리자를 비롯한 주요 작품을 품에 안고 1519년 67세로 사망.", "personality": "왼손잡이에 채식주의자. '완성'에 집착해 작품을 거의 의뢰인에게 돌려주지 않았다. 7000페이지 이상의 노트를 남겼으나 생전 미공개."}, "influences": ["베로키오", "마사초", "피에로 델라 프란체스카"], "influenced": ["라파엘로", "미켈란젤로", "렘브란트", "카라바조"], "major_works_ids": ["mona-lisa-1503"], "style_characteristics": ["스푸마토", "키아로스쿠로", "과학적 관찰", "인체 해부학"], "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Leonardo_self_portrait_small.jpg/300px-Leonardo_self_portrait_small.jpg"}, {"id": "rembrandt", "name": {"full": "Rembrandt Harmenszoon van Rijn", "ko": "렘브란트 판 레인"}, "born": "1606-07-15", "died": "1669-10-04", "nationality": "네덜란드 (레이던)", "movement": "바로크", "bio": {"early_life": "레이던 대학을 중퇴하고 화가의 길로 전환. 20대 초반 암스테르담으로 이주해 빠르게 최고의 초상화가로 명성을 얻음.", "career": "1630~40년대 황금기. 야경(1642) 이후 취향 변화와 아내 사스키아의 사망으로 개인적 위기. 자화상을 생애 전반에 걸쳐 100점 이상 그려 내면의 변화를 기록.", "later_life": "파산을 선언하고 가재도구 경매. 말년엔 가난 속에서도 더 깊어진 내면의 그림을 그렸다. 1669년 63세로 빈곤하게 사망.", "personality": "미술품·골동품 수집에 탕진. 아내 사후 하녀 헨드리케와 동거해 종교계 비난. 그러나 말년 작품은 오히려 가장 깊이 있다는 평."}, "influences": ["카라바조", "피테르 라스트만"], "influenced": ["베르메이르", "고야", "들라크루아"], "major_works_ids": ["night-watch-1642"], "style_characteristics": ["키아로스쿠로", "자화상", "집단 초상화", "성서적 주제"], "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Rembrandt_van_Rijn_-_Self-Portrait_-_Google_Art_Project.jpg/300px-Rembrandt_van_Rijn_-_Self-Portrait_-_Google_Art_Project.jpg"}, {"id": "vermeer", "name": {"full": "Johannes Vermeer", "ko": "요하네스 페르메이르"}, "born": "1632-10-31", "died": "1675-12-15", "nationality": "네덜란드 (델프트)", "movement": "바로크", "bio": {"early_life": "델프트에서 출생. 아버지는 여관과 미술품 거래업을 겸업. 화가 수업 경로 불명 — 렘브란트나 파브리티우스에게 배웠을 것으로 추정.", "career": "생애 대부분을 델프트에서 보내며 약 37점의 작품만 남김. 대부분 자택 2층 앞방에서 창가의 빛을 이용해 그렸다. 카메라 옵스쿠라를 사용했다는 설이 유력.", "later_life": "사후 200년간 거의 잊혀졌다가 19세기 프랑스 미술비평가 토레-뷔르거에 의해 '재발견'. 1675년 43세로 요절, 11명의 자녀와 막대한 빚을 남겼다.", "personality": "과묵하고 내성적. 외부 주문보다 소수 후원자(콜세인 후원가 루펜)에 의존. 작품 당 제작 기간이 수개월~수년에 달할 만큼 느린 작업 속도."}, "influences": ["카라바조", "렘브란트", "카렐 파브리티우스"], "influenced": ["프리드리히", "호퍼", "현대 사진예술"], "major_works_ids": ["girl-pearl-earring-1665"], "style_characteristics": ["빛의 마술", "정밀한 질감", "실내 풍경", "트로니"], "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Johannes_Vermeer_-_Self-Portrait.jpg/300px-Johannes_Vermeer_-_Self-Portrait.jpg"}, {"id": "goya", "name": {"full": "Francisco José de Goya y Lucientes", "ko": "프란시스코 고야"}, "born": "1746-03-30", "died": "1828-04-16", "nationality": "스페인 (아라곤)", "movement": "낭만주의", "bio": {"early_life": "아라곤 지방 출신. 마드리드와 로마에서 수학. 스페인 왕실 수석 화가로 임명되어 귀족 초상화를 그리며 성공.", "career": "46세에 청각을 완전히 잃음. 나폴레옹 침공 이후 작풍이 근본적으로 전환 — '검은 그림(Black Paintings)' 시리즈, 전쟁 판화 연작 등 어두운 내면으로.", "later_life": "페르디난도 7세의 반동 정치를 피해 1824년 프랑스 보르도로 망명. 1828년 82세에 망명지에서 사망.", "personality": "계몽주의 이상을 지지한 지식인이었으나 전쟁 목격 이후 인간 본성의 잔혹함을 직시. 근대 회화·표현주의·초현실주의의 선구자로 평가."}, "influences": ["벨라스케스", "렘브란트", "티치아노"], "influenced": ["들라크루아", "마네", "피카소"], "major_works_ids": ["third-of-may-1814"], "style_characteristics": ["명암 대비", "사회 비판", "심리적 표현", "자유로운 필치"], "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Vicente_L%C3%B3pez_Porta%C3%B1a_-_Goya.jpg/300px-Vicente_L%C3%B3pez_Porta%C3%B1a_-_Goya.jpg"}, {"id": "monet", "name": {"full": "Oscar-Claude Monet", "ko": "클로드 모네"}, "born": "1840-11-14", "died": "1926-12-05", "nationality": "프랑스 (파리)", "movement": "인상주의", "bio": {"early_life": "노르망디 해안 도시에서 성장. 외젠 부댕에게 야외 스케치를 배우고, 파리에서 쿠르베·마네의 영향을 받음.", "career": "1874년 '인상: 해돋이'가 전시되며 '인상주의'라는 명칭의 유래가 됨 — 원래 비평가의 조롱이었다. 지베르니에 정착 후 정원을 조성하고 수련 연작에 집중.", "later_life": "백내장으로 시력 악화. 수술 후 자외선 감지 능력이 생겨 그림 색조가 푸르게 변화. 1926년 86세로 지베르니에서 사망.", "personality": "완벽주의자. 기상 조건에 따라 같은 주제를 반복해 그리는 집요함. 수련 연작 말년엔 그림이 만족스럽지 않으면 직접 불태웠다."}, "influences": ["에두아르 마네", "외젠 부댕", "일본 우키요에"], "influenced": ["세잔", "추상표현주의", "미니멀리즘"], "major_works_ids": ["water-lilies-1906"], "style_characteristics": ["빛의 순간 포착", "야외 작업", "색채 분할", "연작"], "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Claude_Monet_1899_Nadar_crop.jpg/300px-Claude_Monet_1899_Nadar_crop.jpg"}, {"id": "van-gogh", "name": {"full": "Vincent Willem van Gogh", "ko": "빈센트 반 고흐"}, "born": "1853-03-30", "died": "1890-07-29", "nationality": "네덜란드 (줜데르트)", "movement": "후기인상주의", "bio": {"early_life": "목사 집안 출신. 화랑 직원·교사·전도사 등을 전전하다 27세에 화가로 전향. 독학으로 수천 장의 드로잉 연습.", "career": "파리에서 인상주의에 눈뜨고, 아를로 이주해 '남프랑스의 빛'을 찾아 황금기 작품 대거 제작. 고갱과의 갈등 끝에 귀를 자르는 사건 발생.", "later_life": "생 레미 정신병원 입원 중에도 '별이 빛나는 밤' 등 150점 이상 제작. 오베르쉬르우아즈로 이주 후 1890년 37세에 총상으로 사망. 생전 단 1점 판매.", "personality": "강렬한 감정과 불안정한 정신 상태. 동생 테오와의 편지 900통이 현존해 내면 세계를 상세히 알 수 있다. 사후 100년 만에 역대 최고가 화가로."}, "influences": ["렘브란트", "밀레", "일본 우키요에", "쇠라"], "influenced": ["표현주의", "야수파", "현대 미술 전반"], "major_works_ids": ["starry-night-1889"], "style_characteristics": ["역동적 임파스토", "보색 대비", "소용돌이 선묘", "감정의 가시화"], "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Vincent_van_Gogh_-_Self-Portrait_-_Google_Art_Project.jpg/300px-Vincent_van_Gogh_-_Self-Portrait_-_Google_Art_Project.jpg"}, {"id": "klimt", "name": {"full": "Gustav Klimt", "ko": "구스타프 클림트"}, "born": "1862-07-14", "died": "1918-02-06", "nationality": "오스트리아 (빈)", "movement": "상징주의·아르누보", "bio": {"early_life": "빈 공예학교 졸업. 초기엔 아카데미풍 장식 벽화 전문가로 성공. 동생 에른스트의 죽음 이후 화풍이 급격히 변화.", "career": "1897년 '빈 분리파' 창설. 에로티시즘과 금박을 결합한 '황금 시기'로 세계적 명성. 철학·의학·법학 벽화로 빈 대학에서 외설 논란 겪기도.", "later_life": "1차 대전 중에도 활발히 활동하다 1918년 스페인 독감으로 55세에 갑작스럽게 사망. 사망 직전까지 에밀리 플뢰게와 30년간 플라토닉 관계 유지.", "personality": "수줍고 말수 적었으나 여성 편력. 14명 이상의 혼외 자녀가 있었다고 전해짐. 에밀리 플뢰게 외에 평생 동반자 없었음."}, "influences": ["비잔틴 모자이크", "이집트 미술", "일본 우키요에"], "influenced": ["에곤 실레", "오스카 코코슈카", "현대 장식 미술"], "major_works_ids": ["kiss-klimt-1908"], "style_characteristics": ["금박 사용", "장식적 평면성", "에로티시즘", "상징성"], "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Klimt.jpg/300px-Klimt.jpg"}, {"id": "munch", "name": {"full": "Edvard Munch", "ko": "에드바르 뭉크"}, "born": "1863-12-12", "died": "1944-01-23", "nationality": "노르웨이 (로텐)", "movement": "표현주의", "bio": {"early_life": "어린 시절 어머니·누나를 결핵으로 잃음. 아버지의 극단적 종교적 엄격함 속에서 성장. '병약함·광기·죽음은 내 요람을 지킨 검은 천사'라고 회고.", "career": "파리·베를린을 거치며 고갱·로트레크의 영향. 베를린 전시가 외설 논란으로 강제 폐막됐으나 오히려 표현주의 화가들에게 큰 영향.", "later_life": "1908년 신경쇠약으로 코펜하겐 요양원 입원. 회복 후 오슬로 외곽 에켈리에 은거하며 노르웨이 자연을 소재로 보다 온화한 후기 작업.", "personality": "극심한 불안과 알코올 의존. '나의 고통은 나 자신과 나의 예술에 속한다'며 치료 거부. 80세에 나치 점령 치하 오슬로에서 고독하게 사망."}, "influences": ["고갱", "로트레크", "고흐"], "influenced": ["독일 표현주의", "키르히너", "베크만"], "major_works_ids": ["scream-1893"], "style_characteristics": ["심리적 표현", "강렬한 색채", "소용돌이 선묘", "자전적 주제"]}, {"id": "picasso", "name": {"full": "Pablo Ruiz Picasso", "ko": "파블로 피카소"}, "born": "1881-10-25", "died": "1973-04-08", "nationality": "스페인 (말라가) / 프랑스 거주", "movement": "큐비즘", "bio": {"early_life": "말라가 출신. 10세에 이미 아버지(화가 교사)를 능가. 바르셀로나·마드리드에서 아카데미 교육 후 파리로 이주.", "career": "청색 시기→장밋빛 시기→큐비즘(브라크와 공동 개발)→신고전주의→초현실주의 등 10년마다 화풍을 혁신. 91세까지 현역으로 활동.", "later_life": "2차 대전 중 파리 잔류. 프랑스 공산당 입당(1944). 전후 국제 평화 운동의 아이콘. 1973년 91세 남프랑스에서 사망.", "personality": "어마어마한 생명력과 다산성 — 1만 3500점 이상 제작. 여성 편력으로 악명. '나는 창조하지 않는다, 발견할 뿐이다'는 명언."}, "influences": ["세잔", "이베리아 조각", "아프리카 원시미술"], "influenced": ["현대 미술 전 장르"], "major_works_ids": ["guernica-1937"], "style_characteristics": ["다시점", "형태 해체", "콜라주", "정치적 발언"], "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Pablo_picasso_1.jpg/300px-Pablo_picasso_1.jpg"}, {"id": "dali", "name": {"full": "Salvador Domingo Felipe Jacinto Dalí i Domènech", "ko": "살바도르 달리"}, "born": "1904-05-11", "died": "1989-01-23", "nationality": "스페인 (카탈루냐)", "movement": "초현실주의", "bio": {"early_life": "카탈루냐의 부유한 공증인 집안 출신. 마드리드 미술학교 재학 중 피카소·미로와 교류. 퇴학 처분 후 파리로.", "career": "1929년 갈라를 만나며 인생의 전환. 브르통의 초현실주의 그룹 합류 후 '편집증적 비판 방법'으로 독보적 위치. 2차 대전 중 미국으로 이주해 상업 활동 활발.", "later_life": "갈라 사망(1982) 후 극도의 우울증. 피게레스의 달리 극장미술관(자신이 설계)에 스스로 거주하다 1989년 84세로 사망, 미술관 지하에 안장.", "personality": "'광기와 천재의 유일한 차이는 내가 미치지 않았다는 것이다'는 명언처럼 극도로 자의식적이고 연극적인 퍼스나. 콧수염과 기행으로 유명."}, "influences": ["페르메이르", "벨라스케스", "프로이트", "드 키리코"], "influenced": ["팝아트", "현대 광고 디자인", "뮤직비디오"], "major_works_ids": ["persistence-of-memory-1931"], "style_characteristics": ["극사실적 묘사", "꿈의 시각화", "편집증적 이미지", "카탈루냐 풍경"], "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Salvador_Dal%C3%AD_1939.jpg/300px-Salvador_Dal%C3%AD_1939.jpg"}, {"id": "botticelli", "name": {"full": "Sandro Botticelli", "ko": "산드로 보티첼리"}, "born": "1445", "died": "1510", "nationality": "이탈리아 (피렌체)", "movement": "르네상스", "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Sandro_Botticelli_083.jpg/300px-Sandro_Botticelli_083.jpg", "bio": {"early_life": "", "career": "이탈리아 초기 르네상스의 거장. 우아한 선과 신화적 주제를 결합한 독특한 화풍으로 피렌체 메디치 가문의 후원을 받았다.", "personality": ""}}, {"id": "michelangelo", "name": {"full": "Michelangelo Buonarroti", "ko": "미켈란젤로"}, "born": "1475", "died": "1564", "nationality": "이탈리아", "movement": "르네상스", "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Miguel_%C3%81ngel%2C_por_Daniele_da_Volterra_%28detalle%29.jpg/300px-Miguel_%C3%81ngel%2C_por_Daniele_da_Volterra_%28detalle%29.jpg", "bio": {"early_life": "", "career": "르네상스 전성기를 대표하는 이탈리아의 화가, 조각가, 건축가, 시인. 시스티나 성당 천장화와 다비드 조각상으로 유명하다.", "personality": ""}}, {"id": "degas", "name": {"full": "Edgar Degas", "ko": "에드가 드가"}, "born": "1834", "died": "1917", "nationality": "프랑스", "movement": "인상주의", "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Edgar_Degas_-_Self-Portrait_1863.jpg/300px-Edgar_Degas_-_Self-Portrait_1863.jpg", "bio": {"early_life": "", "career": "인상주의와 함께했지만 독자적인 화풍을 지닌 화가. 발레 무용수, 경마, 카페 장면 등 파리의 근대적 일상을 독특한 구도와 순간 포착으로 표현했다.", "personality": ""}}, {"id": "gauguin", "name": {"full": "Paul Gauguin", "ko": "폴 고갱"}, "born": "1848", "died": "1903", "nationality": "프랑스", "movement": "후기인상주의", "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Paul_Gauguin_111.jpg/300px-Paul_Gauguin_111.jpg", "bio": {"early_life": "", "career": "문명을 버리고 타히티로 떠나 원시적 생명력을 탐구한 화가. 평평한 색면과 굵은 윤곽선으로 서양 미술의 새로운 가능성을 열었다.", "personality": ""}}, {"id": "kandinsky", "name": {"full": "Wassily Kandinsky", "ko": "바실리 칸딘스키"}, "born": "1866", "died": "1944", "nationality": "러시아", "movement": "추상표현주의", "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Vassily_Kandinsky_2.jpg/300px-Vassily_Kandinsky_2.jpg", "bio": {"early_life": "", "career": "추상미술의 선구자. 음악과 색채의 관계에 매료되어 형상 없이 색채와 형태만으로 감정을 표현하는 완전 추상 회화를 개척했다.", "personality": ""}}, {"id": "pollock", "name": {"full": "Jackson Pollock", "ko": "잭슨 폴록"}, "born": "1912", "died": "1956", "nationality": "미국", "movement": "추상표현주의", "portrait": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Jackson_Pollock_1950_East_Hampton.jpg/300px-Jackson_Pollock_1950_East_Hampton.jpg", "bio": {"early_life": "", "career": "미국 추상표현주의의 대표 화가. 캔버스를 바닥에 놓고 물감을 뿌리는 드리핑 기법으로 액션 페인팅의 선구자가 되었다.", "personality": ""}}], "history_events": [{"id": "italian-renaissance", "name": "이탈리아 르네상스", "period": "14–16세기", "description": "중세의 신 중심 세계관에서 벗어나 인간·자연·고대 그리스·로마 문명을 재발견한 문화 운동. 피렌체 메디치 가문의 예술 후원이 핵심 동력.", "related_artwork_ids": ["mona-lisa-1503"], "key_figures": ["레오나르도 다 빈치", "미켈란젤로", "라파엘로", "보티첼리"]}, {"id": "dutch-golden-age", "name": "네덜란드 황금시대", "period": "17세기", "description": "스페인으로부터 독립 후 해상 무역으로 전 세계 상권을 장악한 네덜란드의 최전성기. 암스테르담이 세계 금융 중심지로 부상. 부유한 시민 계층의 예술 수요 폭발.", "related_artwork_ids": ["night-watch-1642", "girl-pearl-earring-1665"], "key_figures": ["렘브란트", "페르메이르", "프란스 할스", "얀 스텐"]}, {"id": "napoleonic-wars", "name": "나폴레옹 전쟁", "period": "1803–1815", "description": "나폴레옹 보나파르트 이끄는 프랑스 제국이 유럽 전역을 정복한 전쟁. 스페인 반도 전쟁(1808–1814)에서 프랑스 점령에 저항하는 스페인 민중의 게릴라 전쟁 발생.", "related_artwork_ids": ["third-of-may-1814"], "key_figures": ["나폴레옹 보나파르트", "프란시스코 고야", "웰링턴 공작"]}, {"id": "belle-epoque", "name": "벨 에포크 (아름다운 시절)", "period": "1871–1914", "description": "보불전쟁 종전부터 1차 대전 발발까지 프랑스를 중심으로 유럽이 경험한 평화·번영·낙관의 시기. 인상주의·아르누보·상징주의가 꽃피운 문화 황금기.", "related_artwork_ids": ["water-lilies-1906", "starry-night-1889"], "key_figures": ["모네", "르누아르", "드가", "로트레크"]}, {"id": "vienna-secession", "name": "빈 분리파 (Wiener Secession)", "period": "1897–", "description": "클림트 등 19명의 젊은 예술가들이 보수적인 빈 예술가협회에서 탈퇴해 결성한 아방가르드 운동. '예술을 각 시대에, 각 시대에 자유를'을 모토로 총체 예술(Gesamtkunstwerk) 추구.", "related_artwork_ids": ["kiss-klimt-1908"], "key_figures": ["구스타프 클림트", "에곤 실레", "오토 바그너", "콜로만 모저"]}, {"id": "spanish-civil-war", "name": "스페인 내전", "period": "1936–1939", "description": "프랑코 장군의 파시스트 반란군과 공화국 정부 간의 내전. 히틀러·무솔리니가 프랑코를 지원. 1937년 게르니카 폭격은 민간인 대상 공중전 최초 사례 중 하나. 2차 대전의 전조.", "related_artwork_ids": ["guernica-1937"], "key_figures": ["프란시스코 프랑코", "파블로 피카소", "조지 오웰", "어니스트 헤밍웨이"]}, {"id": "post-impressionism-movement", "name": "후기인상주의", "period": "1880년대–1900년대", "description": "인상주의의 자연 관찰을 계승하면서도 개인 감정·상징·구조를 더욱 강조한 운동. 인상주의 vs 후기인상주의는 유파라기보다 세대 구분에 가까움.", "related_artwork_ids": ["starry-night-1889"], "key_figures": ["반 고흐", "고갱", "세잔", "쇠라"]}, {"id": "interwar-period", "name": "전간기 (양차 대전 사이)", "period": "1919–1939", "description": "1차 대전 종전 후 대공황·파시즘 부상·극단주의 등 혼란의 20년. 다다이즘·초현실주의·바우하우스·표현주의 등 급진적 예술 운동이 동시 폭발한 시기.", "related_artwork_ids": ["persistence-of-memory-1931", "guernica-1937"], "key_figures": ["살바도르 달리", "피카소", "앙드레 브르통", "막스 에른스트"]}], "visit_log": []};
+
+const MOV_COLORS = (BASE_DB._meta && BASE_DB._meta.movement_colors) || {};
+function movColor(mov){ return MOV_COLORS[mov] || '#a78bfa'; }
+
+/* ── 로컬 오버레이 (기기 전용, 아직 archive_db.json에 미반영) ── */
+let LOCAL = { visited: {}, memos: {}, visit_log: [], new_artworks: [], new_artists: [], photos: {} };
+function loadLocal(){
+  try { LOCAL = Object.assign(LOCAL, JSON.parse(localStorage.getItem('masterpiece_local')||'{}')); } catch(e){}
+  if (!LOCAL.photos) LOCAL.photos = {};
+}
+function saveLocal(){ localStorage.setItem('masterpiece_local', JSON.stringify(LOCAL)); }
+
+function getDB(){
+  const artworks = BASE_DB.artworks.concat(LOCAL.new_artworks).map(a => {
+    const ov = LOCAL.visited[a.id];
+    if (ov) { a = Object.assign({}, a, { personal: Object.assign({}, a.personal, ov) }); }
+    if (LOCAL.photos[a.id]) { a = Object.assign({}, a, { image: LOCAL.photos[a.id], has_my_photo: true }); }
+    return a;
+  });
+  const artists = BASE_DB.artists.concat(LOCAL.new_artists);
+  const visit_log = LOCAL.visit_log.concat(BASE_DB.visit_log || []);
+  return { artworks, artists, history_events: BASE_DB.history_events || [], visit_log };
+}
+
+function getArtistName(artistId){
+  const a = getDB().artists.find(x => x.id === artistId);
+  return a ? a.name.ko : artistId;
+}
+function getArtist(artistId){ return getDB().artists.find(x => x.id === artistId); }
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+function init(){
+  loadLocal();
+  const db = getDB();
+  document.getElementById('hdrBadge').textContent = '🎨 ' + db.artworks.length + '점 · 👤 ' + db.artists.length + '명';
+  const visited = db.artworks.filter(a => a.personal && a.personal.visited);
+  document.getElementById('heroStats').innerHTML = `
+    <div class="hs"><div class="hs-num">${db.artworks.length}</div><div class="hs-label">아카이브</div></div>
+    <div class="hs"><div class="hs-num" style="color:var(--green)">${visited.length}</div><div class="hs-label">방문 완료</div></div>
+    <div class="hs"><div class="hs-num" style="color:var(--gold)">${db.artworks.length - visited.length}</div><div class="hs-label">미방문</div></div>`;
+  pickToday();
+  renderRecentVisits();
+  renderExplore();
+  renderTimeline('all');
+  renderLog();
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('vm-date').value = today;
+  const savedKey = localStorage.getItem('masterpiece_api_key');
+  if (savedKey) { apiKey = savedKey; document.getElementById('keyStatus').textContent = '✅ 저장된 키 사용 중'; document.getElementById('keyStatus').style.color = 'var(--green)'; }
+}
+
+/* ══════════════════════════════════════════
+   TAB NAV
+══════════════════════════════════════════ */
+const TABS = ['home','explore','timeline','log','detect'];
+function switchTab(name, btn){
+  TABS.forEach(t => document.getElementById('tab-'+t).classList.toggle('on', t===name));
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  window.scrollTo(0,0);
+}
+
+/* ══════════════════════════════════════════
+   HOME — today's pick / search / recent visits
+══════════════════════════════════════════ */
+let todayIdx = -1;
+function pickToday(force){
+  const db = getDB();
+  const all = db.artworks;
+  if (force || todayIdx < 0){
+    if (!force){ todayIdx = Math.floor(Date.now()/86400000) % all.length; }
+    else { let n; do { n = Math.floor(Math.random()*all.length); } while(n===todayIdx); todayIdx = n; }
+  }
+  const a = all[todayIdx];
+  const c = movColor(a.movement);
+  document.getElementById('todayCard').innerHTML = `
+    ${a.image ? `<img class="today-img" src="${a.image}" alt="${a.title.ko}" onerror="this.style.display='none'">` : ''}
+    <div class="today-body">
+      <div class="today-top"><span>🖼️</span><span class="today-label">TODAY'S PICK</span>
+        <button class="today-refresh" onclick="pickToday(true);renderTodayOnly();event.stopPropagation()">🔀 다른 작품</button></div>
+      <div class="today-movement" style="color:${c}">${a.movement}</div>
+      <div class="today-title">${a.title.ko}</div>
+      <div class="today-artist">🎨 ${getArtistName(a.artist_id)}</div>
+      <div class="today-summary">${(a.description&&a.description.summary)||''}</div>
+    </div>`;
+  document.getElementById('todayCard').onclick = (e) => { if(!e.target.closest('.today-refresh')) openPanel(a.id); };
+}
+function renderTodayOnly(){ /* pickToday already re-renders */ }
+
+function quickSearch(q){
+  const results = document.getElementById('qsResults');
+  const defaultView = document.getElementById('homeDefault');
+  const query = q.trim().toLowerCase();
+  if (!query){ results.innerHTML=''; defaultView.style.display='block'; return; }
+  defaultView.style.display = 'none';
+  const db = getDB();
+  const found = db.artworks.filter(a => {
+    const t1 = (a.title.ko||'').toLowerCase(), t2=(a.title.original||'').toLowerCase();
+    const artist = getArtistName(a.artist_id).toLowerCase();
+    const mov = (a.movement||'').toLowerCase();
+    const tags = (a.tags||[]).join(' ').toLowerCase();
+    return t1.includes(query)||t2.includes(query)||artist.includes(query)||mov.includes(query)||tags.includes(query);
+  });
+  if (!found.length){ results.innerHTML = `<div class="list-empty">🔎 "${q}" 검색 결과가 없습니다.<br>기록 탭에서 새로 추가해 보세요.</div>`; return; }
+  results.innerHTML = '<div class="plist" style="margin-top:12px">' + found.map(a => `
+    <div class="prow" onclick="openPanel('${a.id}')">
+      ${a.image?`<img src="${a.image}" onerror="this.style.display='none'">`:'<div style="width:50px;height:50px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0">🖼️</div>'}
+      <div><div class="prow-name">${a.title.ko}</div><div class="prow-meta" style="color:${movColor(a.movement)}">${getArtistName(a.artist_id)} · ${a.movement}</div></div>
+    </div>`).join('') + '</div>';
+}
+
+function renderRecentVisits(){
+  const db = getDB();
+  const logs = (db.visit_log||[]).slice(0,3);
+  const el = document.getElementById('recentVisits');
+  if (!logs.length){ el.innerHTML = `<div class="list-empty">🏛️ 아직 방문 기록이 없습니다.<br>기록 탭에서 작품을 감상하고 기록해 보세요.</div>`; return; }
+  el.innerHTML = '<div class="visit-list">' + logs.map(l => `
+    <div class="visit-item" onclick="openPanel('${l.artwork_id}')">
+      <div class="vi-top"><div class="vi-title">🖼️ ${l.title}</div><div class="vi-date">${l.date||''}</div></div>
+      <div class="vi-museum">📍 ${l.museum||''}</div>
+      ${l.memo?`<div class="vi-memo">${l.memo}</div>`:''}
+    </div>`).join('') + '</div>';
+}
+
+/* ══════════════════════════════════════════
+   EXPLORE — painters + gallery
+══════════════════════════════════════════ */
+let exploreFilter = 'all';
+function renderExplore(){
+  const db = getDB();
+  const movs = ['all', ...new Set(db.artists.map(a=>a.movement))];
+  document.getElementById('painter-filters').innerHTML = movs.map(m => `
+    <span class="fchip ${m===exploreFilter?'on':''}" style="${m===exploreFilter?'background:'+movColor(m)+';border-color:'+movColor(m):''}" onclick="setExploreFilter('${m}')">${m==='all'?'전체':m}</span>`).join('');
+
+  const painters = db.artists.filter(a => exploreFilter==='all' || a.movement===exploreFilter);
+  const plist = document.getElementById('painters-list');
+  plist.innerHTML = painters.length ? painters.map(a => `
+    <div class="prow" onclick="openArtistSheet('${a.id}')">
+      ${a.portrait?`<img src="${a.portrait}" onerror="this.style.display='none'">`:'<div style="width:50px;height:50px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0">🎨</div>'}
+      <div><div class="prow-name">${a.name.ko}</div><div class="prow-meta">${a.born}–${a.died||''} · ${a.nationality||''}</div>
+      <span class="tag" style="color:${movColor(a.movement)}">${a.movement}</span></div>
+    </div>`).join('') : '<div class="list-empty">해당 사조의 화가가 없습니다.</div>';
+
+  const works = db.artworks.filter(w => exploreFilter==='all' || w.movement===exploreFilter);
+  document.getElementById('gallery-grid').innerHTML = works.length ? works.map(w => `
+    <div class="gcard" onclick="openPanel('${w.id}')">
+      ${w.image?`<img src="${w.image}" onerror="this.parentElement.style.display='none'">`:'<div style="aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:2rem">🖼️</div>'}
+      <div class="gcard-info"><div class="gcard-title">${w.title.ko}</div><div class="gcard-sub">${getArtistName(w.artist_id)}</div></div>
+    </div>`).join('') : '<div class="list-empty">해당 사조의 작품이 없습니다.</div>';
+}
+function setExploreFilter(m){ exploreFilter = m; renderExplore(); }
+
+function openArtistSheet(artistId){
+  const a = getArtist(artistId);
+  if (!a) return;
+  const works = getDB().artworks.filter(w => w.artist_id === artistId);
+  document.getElementById('panelBody').innerHTML = `
+    <div class="panel-handle"></div>
+    ${a.portrait?`<img class="panel-img" src="${a.portrait}" onerror="this.style.display='none'">`:''}
+    <div class="panel-mov" style="color:${movColor(a.movement)}">${a.movement||''}</div>
+    <div class="panel-title">${a.name.ko}</div>
+    <div class="panel-orig">${a.name.full||''} · ${a.born}–${a.died||''} · ${a.nationality||''}</div>
+    <div class="panel-sec"><div class="panel-sec-t">📖 생애·경력</div><div class="panel-sec-b">${(a.bio&&a.bio.career)||'추가 조사가 필요합니다.'}</div></div>
+    ${a.bio&&a.bio.personality?`<div class="panel-sec"><div class="panel-sec-t">✨ 성격·일화</div><div class="panel-sec-b">${a.bio.personality}</div></div>`:''}
+    <div class="panel-sec"><div class="panel-sec-t">🖼 대표 작품 (${works.length})</div>
+      ${works.map(w=>`<div class="prow" style="margin-top:6px" onclick="closePanel();setTimeout(()=>openPanel('${w.id}'),150)">
+        ${w.image?`<img src="${w.image}" style="border-radius:8px" onerror="this.style.display='none'">`:''}<div><div class="prow-name">${w.title.ko}</div><div class="prow-meta">${w.year_created}</div></div></div>`).join('')}
+    </div>
+    <button class="close-btn" onclick="closePanel()">닫기</button>`;
+  document.getElementById('panelBg').classList.add('on');
+}
+
+/* ══════════════════════════════════════════
+   TIMELINE
+══════════════════════════════════════════ */
+function renderTimeline(filter){
+  const db = getDB();
+  const items = [
+    ...db.artworks.map(a => ({type:'art', year: parseInt(a.year_created)||0, data:a})),
+    ...db.history_events.map(e => ({type:'hist', year:e.year, data:e})),
+  ].filter(i => i.year>0).sort((a,b)=>a.year-b.year);
+
+  const movs = ['all', ...new Set(db.artworks.map(a=>a.movement))];
+  document.getElementById('timeline-filters').innerHTML = movs.map(m => `
+    <span class="fchip ${m===filter?'on':''}" style="${m===filter?'background:'+movColor(m)+';border-color:'+movColor(m):''}" onclick="renderTimeline('${m}')">${m==='all'?'전체':m}</span>`).join('');
+
+  const filtered = filter==='all' ? items : items.filter(i => (i.type==='art'?i.data.movement:i.data.movement)===filter || (i.type==='hist' && !i.data.movement));
+
+  document.getElementById('timelineWrap').innerHTML = filtered.map(i => {
+    if (i.type==='art'){
+      const c = movColor(i.data.movement);
+      return `<div class="tl-item" style="border-left-color:${c}" onclick="openPanel('${i.data.id}')">
+        <div class="tl-year" style="color:${c}">${i.year}년 · 🖼️ ${i.data.movement}</div>
+        <div class="tl-name">${i.data.title.ko}</div>
+        <div class="tl-desc">${getArtistName(i.data.artist_id)}</div></div>`;
+    }
+    return `<div class="tl-item hist"><div class="tl-year">${i.year}년 · 📜 ${i.data.type||'역사'}</div>
+      <div class="tl-name">${i.data.label}</div><div class="tl-desc">${i.data.desc||''}</div></div>`;
+  }).join('') || '<div class="list-empty">해당 사조의 항목이 없습니다.</div>';
+}
+
+/* ══════════════════════════════════════════
+   DETAIL PANEL (artwork)
+══════════════════════════════════════════ */
+function openPanel(id){
+  const db = getDB();
+  const a = db.artworks.find(x => x.id === id);
+  if (!a) return;
+  const c = movColor(a.movement);
+  const d = a.description || {};
+  const h = a.historical_context || {};
+  const p = a.personal || {};
+  const pointsHtml = (d.appreciation_points||[]).length ? '<ul class="ppoints">'+d.appreciation_points.map(x=>`<li>${x}</li>`).join('')+'</ul>' : '';
+  const tagsHtml = (a.tags||[]).length ? '<div class="tags-row">'+a.tags.map(t=>`<div class="tag" style="margin-top:0">${t}</div>`).join('')+'</div>' : '';
+  document.getElementById('panelBody').innerHTML = `
+    <div class="panel-handle"></div>
+    ${a.image?`<img class="panel-img" src="${a.image}" onerror="this.style.display='none'">`:`<div class="panel-img" style="height:120px;display:flex;align-items:center;justify-content:center;font-size:2rem;background:var(--bg3)">🖼️</div>`}
+    <div class="row" style="margin:-6px 0 12px 0"><button class="btn btn-outline" style="flex:none;padding:7px 14px;font-size:.74rem" onclick="triggerPhotoPicker('${a.id}')">${a.has_my_photo?'📷 내 사진 변경':'📷 내 사진 추가'}</button></div>
+    ${a.needs_enrichment?'<div class="needs-enrich">⚠️ 이 작품은 아직 상세 조사가 안 됐습니다. research_agent.py로 조사를 요청하세요.</div>':''}
+    <div class="panel-mov" style="color:${c}">${a.movement||''}</div>
+    <div class="panel-title">${a.title.ko}</div>
+    <div class="panel-orig">${a.title.original||''}</div>
+    <div class="panel-artist" onclick="closePanel();setTimeout(()=>openArtistSheet('${a.artist_id}'),150)">🎨 ${getArtistName(a.artist_id)} →</div>
+    <div class="panel-meta"><b>${a.year_created||''}</b> ${a.medium?(' &nbsp;·&nbsp; '+a.medium):''} ${a.dimensions?(' &nbsp;·&nbsp; '+a.dimensions):''}<br>📍 ${(a.location&&a.location.museum)||''}</div>
+    ${p.visited ? `<div style="font-size:.78rem;color:var(--green);margin-bottom:10px">✅ 방문 완료 · ${p.visit_date||''} · ${p.museum_visited||''}</div>` : `<button class="btn btn-green" style="width:100%;margin-bottom:12px" onclick="openVisitModal('${a.id}')">✅ 방문 기록하기</button>`}
+    ${p.memo ? `<div class="panel-sec"><div class="panel-sec-t">✍️ 내 메모</div><div class="panel-sec-b">${p.memo}</div></div>` : ''}
+    ${d.summary?`<div class="panel-sec"><div class="panel-sec-t">📖 작품 설명</div><div class="panel-sec-b">${d.summary}</div>${tagsHtml}</div>`:''}
+    ${d.symbolism?`<div class="panel-sec"><div class="panel-sec-t">🔮 상징</div><div class="panel-sec-b">${d.symbolism}</div></div>`:''}
+    ${d.technique?`<div class="panel-sec"><div class="panel-sec-t">🖌️ 기법</div><div class="panel-sec-b">${d.technique}</div></div>`:''}
+    ${pointsHtml?`<div class="panel-sec"><div class="panel-sec-t">👁️ 감상 포인트</div>${pointsHtml}</div>`:''}
+    ${h.period?`<div class="panel-sec"><div class="panel-sec-t">📜 역사적 배경</div><div class="panel-hist"><b style="color:var(--gold);font-size:.72rem">${h.period}</b><div style="font-size:.78rem;color:var(--text2);margin-top:4px">${h.year_context||''}</div></div></div>`:''}
+    <button class="close-btn" onclick="closePanel()">닫기</button>`;
+  document.getElementById('panelBg').classList.add('on');
+}
+function closePanel(e){ if(!e || e.target===document.getElementById('panelBg')) document.getElementById('panelBg').classList.remove('on'); }
+
+/* ══════════════════════════════════════════
+   VISIT LOGGING (localStorage overlay)
+══════════════════════════════════════════ */
+let visitingId = null;
+function openVisitModal(id){
+  visitingId = id;
+  const a = getDB().artworks.find(x=>x.id===id);
+  document.getElementById('vm-museum').value = a ? ((a.location&&a.location.museum)||'') : '';
+  document.getElementById('vm-memo').value = '';
+  document.getElementById('visitModal').classList.add('on');
+}
+function closeVisitModal(e){ if(!e||e.target===document.getElementById('visitModal')) document.getElementById('visitModal').classList.remove('on'); }
+function saveVisit(){
+  if (!visitingId) return;
+  const a = getDB().artworks.find(x=>x.id===visitingId);
+  const date = document.getElementById('vm-date').value;
+  const museum = document.getElementById('vm-museum').value;
+  const memo = document.getElementById('vm-memo').value;
+  LOCAL.visited[visitingId] = { visited:true, visit_date:date, museum_visited:museum, memo:memo };
+  LOCAL.visit_log.unshift({ artwork_id:visitingId, title:a.title.ko, artist:getArtistName(a.artist_id), date, museum, memo });
+  saveLocal();
+  closeVisitModal();
+  openPanel(visitingId);
+  renderRecentVisits(); renderLog();
+  showToast('방문 기록 저장 완료 ✅ (내보내기로 archive_db.json에 반영하세요)');
+}
+
+function renderLog(){
+  const db = getDB();
+  const logs = db.visit_log;
+  const el = document.getElementById('logContent');
+  if (!logs.length){ el.innerHTML = `<div class="list-empty">🗺️ 아직 방문 기록이 없습니다.</div>`; return; }
+  el.innerHTML = '<div class="visit-list">' + logs.map(l => `
+    <div class="visit-item" onclick="openPanel('${l.artwork_id}')">
+      <div class="vi-top"><div class="vi-title">🖼️ ${l.title}</div><div class="vi-date">${l.date||''}</div></div>
+      <div class="vi-museum">📍 ${l.museum||''} · ${l.artist||''}</div>
+      ${l.memo?`<div class="vi-memo">${l.memo}</div>`:''}
+    </div>`).join('') + '</div>';
+}
+
+/* ══════════════════════════════════════════
+   IMAGE UPLOAD (신규 작품 추가 폼)
+══════════════════════════════════════════ */
+let addImageDataUrl = '';
+function readFileAsDataUrl(file){
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')){ reject(new Error('이미지 파일이 아닙니다')); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function onAddImageSelect(e){ if (e.target.files[0]) handleAddImageFile(e.target.files[0]); }
+function onAddImgDragOver(e){ e.preventDefault(); document.getElementById('addImgArea').style.borderColor='var(--accent)'; }
+function onAddImgDragLeave(){ document.getElementById('addImgArea').style.borderColor=''; }
+function onAddImgDrop(e){
+  e.preventDefault();
+  document.getElementById('addImgArea').style.borderColor='';
+  const f = e.dataTransfer.files[0];
+  if (f) handleAddImageFile(f);
+}
+function handleAddImageFile(file){
+  readFileAsDataUrl(file).then(url => {
+    addImageDataUrl = url;
+    document.getElementById('add-image-preview').innerHTML =
+      `<img src="${url}" style="width:100%;max-height:200px;object-fit:contain;border-radius:10px;background:var(--bg3)">`;
+    showToast('📷 이미지 첨부됨');
+  }).catch(() => showToast('⚠️ 이미지를 읽을 수 없습니다'));
+}
+
+/* ══════════════════════════════════════════
+   ADD NEW ARTWORK (local, to be exported/synced)
+══════════════════════════════════════════ */
+function clearAddForm(){
+  ['add-title-ko','add-title-orig','add-artist','add-year','add-movement','add-museum','add-summary','add-memo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('add-image').value = '';
+  document.getElementById('add-image-preview').innerHTML = '';
+  addImageDataUrl = '';
+}
+function submitAdd(){
+  const titleKo = document.getElementById('add-title-ko').value.trim();
+  const titleOrig = document.getElementById('add-title-orig').value.trim();
+  const artist = document.getElementById('add-artist').value.trim();
+  const year = document.getElementById('add-year').value.trim();
+  const movement = document.getElementById('add-movement').value.trim();
+  const museum = document.getElementById('add-museum').value.trim();
+  const summary = document.getElementById('add-summary').value.trim();
+  const memo = document.getElementById('add-memo').value.trim();
+  if (!titleKo || !artist){ showToast('⚠️ 작품명과 화가명은 필수입니다'); return; }
+  const id = 'user-' + Date.now();
+  const artistId = 'user-artist-' + artist.replace(/\s+/g,'-').toLowerCase();
+  if (!getDB().artists.find(a=>a.name.ko===artist)){
+    LOCAL.new_artists.push({ id:artistId, name:{full:artist,ko:artist}, born:'', died:'', nationality:'', movement, bio:{early_life:'',career:'',personality:''} });
+  }
+  const artwork = {
+    id, title:{original:titleOrig||titleKo, ko:titleKo}, artist_id:artistId, year_created:year, medium:'', dimensions:'',
+    location:{museum, city:'', country:'', room:''}, movement,
+    description:{summary, symbolism:'', technique:'', appreciation_points:[], mysteries:[]},
+    historical_context:{period:'', year_context:'', social_background:''},
+    personal:{visited: !!memo, visit_date: memo?new Date().toISOString().split('T')[0]:null, museum_visited: museum, memo},
+    tags:[movement].filter(Boolean), archived_date:new Date().toISOString().split('T')[0], needs_enrichment:true,
+    image: addImageDataUrl || '', image_pending_save: !!addImageDataUrl
+  };
+  LOCAL.new_artworks.push(artwork);
+  if (memo){ LOCAL.visit_log.unshift({artwork_id:id, title:titleKo, artist, date:artwork.personal.visit_date, museum, memo}); }
+  saveLocal();
+  clearAddForm();
+  showToast('✅ 로컬에 추가되었습니다 (내보내기 버튼으로 동기화하세요)');
+  renderLog(); renderExplore(); renderRecentVisits();
+}
+
+/* ══════════════════════════════════════════
+   ADD/CHANGE PHOTO on an EXISTING artwork (from detail panel)
+══════════════════════════════════════════ */
+function triggerPhotoPicker(artworkId){
+  let input = document.getElementById('photoPickerInput');
+  if (!input){
+    input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*'; input.id = 'photoPickerInput'; input.style.display = 'none';
+    document.body.appendChild(input);
+  }
+  input.onchange = (e) => {
+    if (!e.target.files[0]) return;
+    readFileAsDataUrl(e.target.files[0]).then(url => {
+      LOCAL.photos[artworkId] = url;
+      saveLocal();
+      openPanel(artworkId);
+      renderExplore();
+      showToast('📷 내 사진이 추가되었습니다 (내보내기로 동기화하세요)');
+    }).catch(() => showToast('⚠️ 이미지를 읽을 수 없습니다'));
+  };
+  input.click();
+}
+
+function exportLocalChanges(){
+  const payload = JSON.stringify(LOCAL, null, 2);
+  const text = '다음은 Masterpiece 웹앱에서 로컬로 추가/수정된 내용입니다. archive_db.json에 병합해주세요:\n\n' + payload;
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>showToast('📋 클립보드에 복사됨 — Claude 채팅에 붙여넣으세요')).catch(()=>fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text){
+  const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showToast('📋 클립보드에 복사됨'); } catch(e){ alert(text); }
+  document.body.removeChild(ta);
+}
+
+/* ══════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════ */
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ══════════════════════════════════════════
+   DETECT — photo → Claude Vision 식별
+══════════════════════════════════════════ */
+let apiKey = ''; let imgBase64 = ''; let imgMime = '';
+function saveApiKey(){
+  const v = document.getElementById('apiKeyInput').value.trim();
+  if (!v){ alert('API Key를 입력해주세요.'); return; }
+  apiKey = v; localStorage.setItem('masterpiece_api_key', v);
+  document.getElementById('apiKeyInput').value = '●'.repeat(Math.min(v.length,18));
+  const st = document.getElementById('keyStatus'); st.textContent = '✅ 저장됨'; st.style.color = 'var(--green)';
+}
+function onFileSelect(e){ if (e.target.files[0]) loadImg(e.target.files[0]); }
+function onDragOver(e){ e.preventDefault(); document.getElementById('uploadArea').style.borderColor='var(--accent)'; }
+function onDragLeave(){ document.getElementById('uploadArea').style.borderColor=''; }
+function onDrop(e){ e.preventDefault(); document.getElementById('uploadArea').style.borderColor=''; const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')) loadImg(f); }
+function loadImg(file){
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const url = ev.target.result; const parts = url.split(',');
+    imgBase64 = parts[1]; imgMime = parts[0].match(/:(.*?);/)[1];
+    document.getElementById('previewImg').src = url;
+    document.getElementById('upload-section').classList.add('hidden');
+    document.getElementById('preview-section').classList.remove('hidden');
+    document.getElementById('result-section').innerHTML = '';
+  };
+  reader.readAsDataURL(file);
+}
+async function analyzeArtwork(){
+  if (!apiKey){ alert('먼저 API Key를 저장해주세요.'); return; }
+  if (!imgBase64){ alert('이미지를 먼저 선택해주세요.'); return; }
+  const btn = document.getElementById('analyzeBtn'); btn.disabled = true; btn.textContent = '분석 중...';
+  const prompt = '이 이미지를 분석해주세요. 미술 작품이라면 다음 JSON을 반환해주세요:\n{"isArtwork":true,"title":"작품명","artist":"화가명","year":"제작연도","movement":"미술사조","museum":"소장처","description":"작품설명(2~3문장)","trivia":"흥미로운사실(1~2문장)"}\n미술 작품이 아니면: {"isArtwork":false,"message":"설명"}\nJSON만 반환하세요.';
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'x-api-key':apiKey, 'anthropic-version':'2023-06-01', 'content-type':'application/json', 'anthropic-dangerous-direct-browser-access':'true' },
+      body: JSON.stringify({ model:'claude-opus-4-8', max_tokens:1024, messages:[{role:'user', content:[
+        {type:'image', source:{type:'base64', media_type:imgMime, data:imgBase64}}, {type:'text', text:prompt}
+      ]}] })
+    });
+    if (!resp.ok){ const err = await resp.json(); throw new Error(err.error?err.error.message:'API 오류 '+resp.status); }
+    const data = await resp.json();
+    const raw = data.content[0].text.trim().replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'');
+    showDetectResult(JSON.parse(raw));
+  } catch(e){
+    document.getElementById('result-section').innerHTML = `<div class="result-box" style="color:var(--red)">⚠️ 분석 실패: ${e.message}</div>`;
+  } finally { btn.disabled = false; btn.textContent = '🔍 작품 분석하기'; }
+}
+function showDetectResult(r){
+  const sec = document.getElementById('result-section');
+  if (!r.isArtwork){ sec.innerHTML = `<div class="result-box">🖼 ${r.message||'미술 작품을 인식할 수 없습니다.'}</div>`; return; }
+  sec.innerHTML = `<div class="result-box">
+    <div style="font-size:1.05rem;font-weight:800">${r.title||''}</div>
+    <div style="font-size:.85rem;color:var(--accent);margin-bottom:8px">${r.artist||''} · ${r.year||''} · ${r.movement||''}</div>
+    <div style="font-size:.82rem;color:var(--text2);line-height:1.7;margin-bottom:8px">${r.description||''}</div>
+    ${r.trivia?`<div style="font-size:.78rem;color:var(--gold);border-left:3px solid var(--gold);padding-left:10px">💡 ${r.trivia}</div>`:''}
+    <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="prefillFromDetect(${JSON.stringify(r).replace(/"/g,'&quot;')})">기록 탭에서 아카이빙하기 →</button>
+  </div>`;
+}
+function prefillFromDetect(r){
+  switchTab('log', document.querySelector('[data-s="log"]'));
+  document.getElementById('add-title-ko').value = r.title||'';
+  document.getElementById('add-artist').value = r.artist||'';
+  document.getElementById('add-year').value = r.year||'';
+  document.getElementById('add-movement').value = r.movement||'';
+  document.getElementById('add-museum').value = r.museum||'';
+  document.getElementById('add-summary').value = r.description||'';
+}
+
+init();
+</script>
+</body>
+</html>
