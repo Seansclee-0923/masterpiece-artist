@@ -303,17 +303,21 @@ function movColor(mov){ return MOV_COLORS[mov] || '#c2c2c2'; }
 function ic(name){ return '<svg class="icon"><use href="#i-'+name+'"/></svg>'; }
 
 /* ── 로컬 오버레이 (기기 전용, 아직 archive_db.json에 미반영) ── */
-let LOCAL = { visited: {}, memos: {}, visit_log: [], new_artworks: [], new_artists: [], photos: {}, artwork_edits: {}, artist_edits: {} };
+let LOCAL = { visited: {}, memos: {}, visit_log: [], new_artworks: [], new_artists: [], photos: {}, artwork_edits: {}, artist_edits: {}, deleted_artworks: [], deleted_artists: [] };
 function loadLocal(){
   try { LOCAL = Object.assign(LOCAL, JSON.parse(localStorage.getItem('masterpiece_local')||'{}')); } catch(e){}
   if (!LOCAL.photos) LOCAL.photos = {};
   if (!LOCAL.artwork_edits) LOCAL.artwork_edits = {};
   if (!LOCAL.artist_edits) LOCAL.artist_edits = {};
+  if (!LOCAL.deleted_artworks) LOCAL.deleted_artworks = [];
+  if (!LOCAL.deleted_artists) LOCAL.deleted_artists = [];
 }
 function saveLocal(){ localStorage.setItem('masterpiece_local', JSON.stringify(LOCAL)); }
 
 function getDB(){
-  const artworks = BASE_DB.artworks.concat(LOCAL.new_artworks).map(a => {
+  const artworks = BASE_DB.artworks.concat(LOCAL.new_artworks)
+    .filter(a => LOCAL.deleted_artworks.indexOf(a.id) === -1)
+    .map(a => {
     const ov = LOCAL.visited[a.id];
     if (ov) { a = Object.assign({}, a, { personal: Object.assign({}, a.personal, ov) }); }
     if (LOCAL.photos[a.id]) { a = Object.assign({}, a, { image: LOCAL.photos[a.id], has_my_photo: true }); }
@@ -326,12 +330,15 @@ function getDB(){
     }
     return a;
   });
-  const artists = BASE_DB.artists.concat(LOCAL.new_artists).map(ar => {
+  const artists = BASE_DB.artists.concat(LOCAL.new_artists)
+    .filter(ar => LOCAL.deleted_artists.indexOf(ar.id) === -1)
+    .map(ar => {
     const edit = LOCAL.artist_edits[ar.id];
     if (edit) { ar = Object.assign({}, ar, { bio: Object.assign({}, ar.bio, edit.bio||{}) }); }
     return ar;
   });
-  const visit_log = LOCAL.visit_log.concat(BASE_DB.visit_log || []);
+  const visit_log = LOCAL.visit_log.concat(BASE_DB.visit_log || [])
+    .filter(l => LOCAL.deleted_artworks.indexOf(l.artwork_id) === -1);
   return { artworks, artists, history_events: BASE_DB.history_events || [], visit_log };
 }
 
@@ -340,6 +347,19 @@ function getArtistName(artistId){
   return a ? a.name.ko : artistId;
 }
 function getArtist(artistId){ return getDB().artists.find(x => x.id === artistId); }
+
+/* ── 중복 검사 헬퍼 (공백/대소문자 무시하고 비교) ── */
+function normStr(s){ return (s||'').toString().trim().toLowerCase().replace(/\s+/g,''); }
+function findDuplicateArtwork(titleKo, artistName, excludeId){
+  const nt = normStr(titleKo), na = normStr(artistName);
+  if (!nt) return null;
+  return getDB().artworks.find(a => a.id !== excludeId && normStr(a.title.ko) === nt && normStr(getArtistName(a.artist_id)) === na) || null;
+}
+function findDuplicateArtist(name, excludeId){
+  const nn = normStr(name);
+  if (!nn) return null;
+  return getDB().artists.find(ar => ar.id !== excludeId && normStr(ar.name.ko) === nn) || null;
+}
 
 /* ══════════════════════════════════════════
    INIT
@@ -510,6 +530,7 @@ function openArtistSheet(artistId, skipHistory){
         <button class="btn btn-outline" onclick="manualEnrich()">직접 추가</button>
       </div>
     </div>
+    <button class="btn btn-outline" style="width:100%;margin-top:8px;color:#ff6b6b;border-color:#66312f" onclick="deleteArtist('${a.id}')">${ic('x')}이 화가 삭제</button>
     <button class="close-btn" onclick="closePanel()">닫기</button>`;
   showOverlay(skipHistory);
 }
@@ -580,6 +601,7 @@ function openPanel(id, skipHistory){
         <button class="btn btn-outline" onclick="manualEnrich()">직접 추가</button>
       </div>
     </div>
+    <button class="btn btn-outline" style="width:100%;margin-top:8px;color:#ff6b6b;border-color:#66312f" onclick="deleteArtwork('${a.id}')">${ic('x')}이 작품 삭제</button>
     <button class="close-btn" onclick="closePanel()">닫기</button>`;
   showOverlay(skipHistory);
 }
@@ -592,6 +614,56 @@ function closePanelSilent(){
   /* 같은 오버레이 안에서 다른 화면으로 전환할 때: 히스토리 엔트리 소비 없이 그냥 숨김 */
   if (history.state && history.state.overlay) { history.back(); }
   else { document.getElementById('panelBg').classList.remove('on'); }
+}
+
+/* ══════════════════════════════════════════
+   삭제 (작품/화가) — BASE_DB 항목은 tombstone으로, 로컬 추가분은 배열에서 직접 제거
+══════════════════════════════════════════ */
+function refreshAfterDelete(){
+  renderExplore(); renderTimeline('all'); renderLog(); renderRecentVisits();
+  const db = getDB();
+  document.getElementById('hdrBadge').innerHTML = ic('image') + db.artworks.length + ' · ' + ic('user') + db.artists.length;
+}
+function deleteArtwork(id){
+  const a = getDB().artworks.find(x=>x.id===id);
+  if (!a) return;
+  if (!confirm(`"${a.title.ko}" 작품을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+  LOCAL.new_artworks = LOCAL.new_artworks.filter(x=>x.id!==id);
+  if (LOCAL.deleted_artworks.indexOf(id)===-1) LOCAL.deleted_artworks.push(id);
+  delete LOCAL.visited[id];
+  delete LOCAL.memos[id];
+  delete LOCAL.photos[id];
+  delete LOCAL.artwork_edits[id];
+  LOCAL.visit_log = LOCAL.visit_log.filter(l=>l.artwork_id!==id);
+  saveLocal();
+  closePanel();
+  refreshAfterDelete();
+  showToast('작품이 삭제되었습니다');
+}
+function deleteArtist(id){
+  const a = getArtist(id);
+  if (!a) return;
+  const works = getDB().artworks.filter(w=>w.artist_id===id);
+  const msg = works.length
+    ? `"${a.name.ko}" 화가를 삭제하시겠습니까?\n연결된 작품 ${works.length}개도 함께 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.`
+    : `"${a.name.ko}" 화가를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`;
+  if (!confirm(msg)) return;
+  works.forEach(w => {
+    LOCAL.new_artworks = LOCAL.new_artworks.filter(x=>x.id!==w.id);
+    if (LOCAL.deleted_artworks.indexOf(w.id)===-1) LOCAL.deleted_artworks.push(w.id);
+    delete LOCAL.visited[w.id];
+    delete LOCAL.memos[w.id];
+    delete LOCAL.photos[w.id];
+    delete LOCAL.artwork_edits[w.id];
+    LOCAL.visit_log = LOCAL.visit_log.filter(l=>l.artwork_id!==w.id);
+  });
+  LOCAL.new_artists = LOCAL.new_artists.filter(x=>x.id!==id);
+  if (LOCAL.deleted_artists.indexOf(id)===-1) LOCAL.deleted_artists.push(id);
+  delete LOCAL.artist_edits[id];
+  saveLocal();
+  closePanel();
+  refreshAfterDelete();
+  showToast('화가 및 관련 작품이 삭제되었습니다');
 }
 
 /* ══════════════════════════════════════════
@@ -716,9 +788,15 @@ function submitAdd(){
   const summary = document.getElementById('add-summary').value.trim();
   const memo = document.getElementById('add-memo').value.trim();
   if (!titleKo || !artist){ showToast('작품명과 화가명은 필수입니다'); return; }
+  const dupArt = findDuplicateArtwork(titleKo, artist);
+  if (dupArt && !confirm(`이미 비슷한 작품이 아카이브에 있습니다:\n"${dupArt.title.ko}" (${getArtistName(dupArt.artist_id)})\n\n그래도 추가하시겠습니까?`)) { return; }
   const id = 'user-' + Date.now();
-  const artistId = 'user-artist-' + artist.replace(/\s+/g,'-').toLowerCase();
-  if (!getDB().artists.find(a=>a.name.ko===artist)){
+  const existingArtist = findDuplicateArtist(artist);
+  let artistId;
+  if (existingArtist) {
+    artistId = existingArtist.id;
+  } else {
+    artistId = 'user-artist-' + artist.replace(/\s+/g,'-').toLowerCase();
     LOCAL.new_artists.push({ id:artistId, name:{full:artist,ko:artist}, born:'', died:'', nationality:'', movement, bio:{early_life:'',career:'',personality:''} });
   }
   const artwork = {
@@ -858,8 +936,15 @@ function archiveDetectedArtwork(){
   const trivia = (r.trivia||'').trim();
   const today = new Date().toISOString().split('T')[0];
 
-  const artistId = 'user-artist-' + artist.replace(/\s+/g,'-').toLowerCase();
-  if (!getDB().artists.find(a=>a.name.ko===artist)){
+  const dupArt = findDuplicateArtwork(titleKo, artist);
+  if (dupArt && !confirm(`이미 비슷한 작품이 아카이브에 있습니다:\n"${dupArt.title.ko}" (${getArtistName(dupArt.artist_id)})\n\n그래도 저장하시겠습니까?`)) { return; }
+
+  const existingArtist = findDuplicateArtist(artist);
+  let artistId;
+  if (existingArtist) {
+    artistId = existingArtist.id;
+  } else {
+    artistId = 'user-artist-' + artist.replace(/\s+/g,'-').toLowerCase();
     LOCAL.new_artists.push({ id:artistId, name:{full:artist,ko:artist}, born:'', died:'', nationality:'', movement, bio:{early_life:'',career:'',personality:''} });
   }
   const id = 'detect-' + Date.now();
