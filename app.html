@@ -187,7 +187,7 @@ textarea.form-input{resize:none;min-height:70px;}
 
 <div class="bnav">
   <button class="nb on" data-s="home" onclick="switchTab('home',this)"><svg class="icon"><use href="#i-home"/></svg><span class="nb-l">홈</span></button>
-  <button class="nb" data-s="explore" onclick="switchTab('explore',this)"><svg class="icon"><use href="#i-explore"/></svg><span class="nb-l">탐색</span></button>
+  <button class="nb" data-s="explore" onclick="switchTab('explore',this)"><svg class="icon"><use href="#i-explore"/></svg><span class="nb-l">Archive</span></button>
   <button class="nb" data-s="timeline" onclick="switchTab('timeline',this)"><svg class="icon"><use href="#i-calendar"/></svg><span class="nb-l">역사</span></button>
   <button class="nb" data-s="log" onclick="switchTab('log',this)"><svg class="icon"><use href="#i-notebook"/></svg><span class="nb-l">기록</span></button>
   <button class="nb" data-s="detect" onclick="switchTab('detect',this)"><svg class="icon"><use href="#i-scan"/></svg><span class="nb-l">감지</span></button>
@@ -303,10 +303,12 @@ function movColor(mov){ return MOV_COLORS[mov] || '#c2c2c2'; }
 function ic(name){ return '<svg class="icon"><use href="#i-'+name+'"/></svg>'; }
 
 /* ── 로컬 오버레이 (기기 전용, 아직 archive_db.json에 미반영) ── */
-let LOCAL = { visited: {}, memos: {}, visit_log: [], new_artworks: [], new_artists: [], photos: {} };
+let LOCAL = { visited: {}, memos: {}, visit_log: [], new_artworks: [], new_artists: [], photos: {}, artwork_edits: {}, artist_edits: {} };
 function loadLocal(){
   try { LOCAL = Object.assign(LOCAL, JSON.parse(localStorage.getItem('masterpiece_local')||'{}')); } catch(e){}
   if (!LOCAL.photos) LOCAL.photos = {};
+  if (!LOCAL.artwork_edits) LOCAL.artwork_edits = {};
+  if (!LOCAL.artist_edits) LOCAL.artist_edits = {};
 }
 function saveLocal(){ localStorage.setItem('masterpiece_local', JSON.stringify(LOCAL)); }
 
@@ -315,9 +317,20 @@ function getDB(){
     const ov = LOCAL.visited[a.id];
     if (ov) { a = Object.assign({}, a, { personal: Object.assign({}, a.personal, ov) }); }
     if (LOCAL.photos[a.id]) { a = Object.assign({}, a, { image: LOCAL.photos[a.id], has_my_photo: true }); }
+    const edit = LOCAL.artwork_edits[a.id];
+    if (edit) {
+      a = Object.assign({}, a, {
+        description: Object.assign({}, a.description, edit.description||{}),
+        historical_context: Object.assign({}, a.historical_context, edit.historical_context||{})
+      });
+    }
     return a;
   });
-  const artists = BASE_DB.artists.concat(LOCAL.new_artists);
+  const artists = BASE_DB.artists.concat(LOCAL.new_artists).map(ar => {
+    const edit = LOCAL.artist_edits[ar.id];
+    if (edit) { ar = Object.assign({}, ar, { bio: Object.assign({}, ar.bio, edit.bio||{}) }); }
+    return ar;
+  });
   const visit_log = LOCAL.visit_log.concat(BASE_DB.visit_log || []);
   return { artworks, artists, history_events: BASE_DB.history_events || [], visit_log };
 }
@@ -467,14 +480,15 @@ function renderExplore(){
 }
 function setExploreFilter(m){ exploreFilter = m; renderExplore(); }
 
-function showOverlay(){
+function showOverlay(skipHistory){
   document.getElementById('panelBg').classList.add('on');
-  history.pushState({tab:currentTab, overlay:true}, '', '#panel');
+  if (!skipHistory) history.pushState({tab:currentTab, overlay:true}, '', '#panel');
 }
 
-function openArtistSheet(artistId){
+function openArtistSheet(artistId, skipHistory){
   const a = getArtist(artistId);
   if (!a) return;
+  enrichCtx = {type:'artist', id:a.id};
   const works = getDB().artworks.filter(w => w.artist_id === artistId);
   document.getElementById('panelBody').innerHTML = `
     <div class="panel-handle"></div>
@@ -482,14 +496,22 @@ function openArtistSheet(artistId){
     <div class="panel-mov">${a.movement||''}</div>
     <div class="panel-title">${a.name.ko}</div>
     <div class="panel-orig">${a.name.full||''} · ${a.born}–${a.died||''} · ${a.nationality||''}</div>
-    <div class="panel-sec"><div class="panel-sec-t">${ic('book')}생애·경력</div><div class="panel-sec-b">${(a.bio&&a.bio.career)||'추가 조사가 필요합니다.'}</div></div>
-    ${a.bio&&a.bio.personality?`<div class="panel-sec"><div class="panel-sec-t">${ic('sparkle')}성격·일화</div><div class="panel-sec-b">${a.bio.personality}</div></div>`:''}
+    <div class="panel-sec"><div class="panel-sec-t">${ic('book')}생애·경력</div><div class="panel-sec-b" style="white-space:pre-line">${(a.bio&&a.bio.career)||'추가 조사가 필요합니다.'}</div></div>
+    ${a.bio&&a.bio.personality?`<div class="panel-sec"><div class="panel-sec-t">${ic('sparkle')}성격·일화</div><div class="panel-sec-b" style="white-space:pre-line">${a.bio.personality}</div></div>`:''}
     <div class="panel-sec"><div class="panel-sec-t">${ic('image')}대표 작품 (${works.length})</div>
       ${works.map(w=>`<div class="prow" style="margin-top:6px" onclick="closePanelSilent();setTimeout(()=>openPanel('${w.id}'),150)">
         ${w.image?`<img src="${w.image}" style="border-radius:8px;object-fit:cover" onerror="this.style.display='none'">`:''}<div><div class="prow-name">${w.title.ko}</div><div class="prow-meta">${w.year_created}</div></div></div>`).join('')}
     </div>
+    <div class="panel-sec">
+      <div class="panel-sec-t">${ic('sparkle')}화가 정보 업데이트</div>
+      <textarea class="form-input" id="enrichInput" rows="2" placeholder="추가·보완하고 싶은 내용을 입력하세요 (예: 대표작 스타일 변화를 알려줘)"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-primary" id="enrichBtn" onclick="aiEnrich()">${ic('sparkle')}AI로 보완</button>
+        <button class="btn btn-outline" onclick="manualEnrich()">직접 추가</button>
+      </div>
+    </div>
     <button class="close-btn" onclick="closePanel()">닫기</button>`;
-  showOverlay();
+  showOverlay(skipHistory);
 }
 
 /* ══════════════════════════════════════════
@@ -523,10 +545,11 @@ function renderTimeline(filter){
 /* ══════════════════════════════════════════
    DETAIL PANEL (artwork)
 ══════════════════════════════════════════ */
-function openPanel(id){
+function openPanel(id, skipHistory){
   const db = getDB();
   const a = db.artworks.find(x => x.id === id);
   if (!a) return;
+  enrichCtx = {type:'artwork', id:a.id};
   const d = a.description || {};
   const h = a.historical_context || {};
   const p = a.personal || {};
@@ -544,13 +567,21 @@ function openPanel(id){
     <div class="panel-meta"><b>${a.year_created||''}</b> ${a.medium?(' &nbsp;·&nbsp; '+a.medium):''} ${a.dimensions?(' &nbsp;·&nbsp; '+a.dimensions):''}<div class="loc">${ic('pin')}${(a.location&&a.location.museum)||''}</div></div>
     ${p.visited ? `<div class="status-line">${ic('check-circle')}방문 완료 · ${p.visit_date||''} · ${p.museum_visited||''}</div>` : `<button class="btn btn-primary" style="width:100%;margin-bottom:12px" onclick="openVisitModal('${a.id}')">${ic('check')}방문 기록하기</button>`}
     ${p.memo ? `<div class="panel-sec"><div class="panel-sec-t">${ic('notebook')}내 메모</div><div class="panel-sec-b">${p.memo}</div></div>` : ''}
-    ${d.summary?`<div class="panel-sec"><div class="panel-sec-t">${ic('book')}작품 설명</div><div class="panel-sec-b">${d.summary}</div>${tagsHtml}</div>`:''}
-    ${d.symbolism?`<div class="panel-sec"><div class="panel-sec-t">${ic('sparkle')}상징</div><div class="panel-sec-b">${d.symbolism}</div></div>`:''}
-    ${d.technique?`<div class="panel-sec"><div class="panel-sec-t">${ic('brush')}기법</div><div class="panel-sec-b">${d.technique}</div></div>`:''}
+    ${d.summary?`<div class="panel-sec"><div class="panel-sec-t">${ic('book')}작품 설명</div><div class="panel-sec-b" style="white-space:pre-line">${d.summary}</div>${tagsHtml}</div>`:''}
+    ${d.symbolism?`<div class="panel-sec"><div class="panel-sec-t">${ic('sparkle')}상징</div><div class="panel-sec-b" style="white-space:pre-line">${d.symbolism}</div></div>`:''}
+    ${d.technique?`<div class="panel-sec"><div class="panel-sec-t">${ic('brush')}기법</div><div class="panel-sec-b" style="white-space:pre-line">${d.technique}</div></div>`:''}
     ${pointsHtml?`<div class="panel-sec"><div class="panel-sec-t">${ic('eye')}감상 포인트</div>${pointsHtml}</div>`:''}
-    ${h.period?`<div class="panel-sec"><div class="panel-sec-t">${ic('calendar')}역사적 배경</div><div class="panel-hist"><b style="font-size:.72rem;color:var(--text)">${h.period}</b><div style="font-size:.78rem;color:var(--text2);margin-top:4px">${h.year_context||''}</div></div></div>`:''}
+    ${h.period?`<div class="panel-sec"><div class="panel-sec-t">${ic('calendar')}역사적 배경</div><div class="panel-hist"><b style="font-size:.72rem;color:var(--text)">${h.period}</b><div style="font-size:.78rem;color:var(--text2);margin-top:4px;white-space:pre-line">${h.year_context||''}</div></div></div>`:''}
+    <div class="panel-sec">
+      <div class="panel-sec-t">${ic('sparkle')}설명 업데이트</div>
+      <textarea class="form-input" id="enrichInput" rows="2" placeholder="추가·보완하고 싶은 내용을 입력하세요 (예: 화풍을 더 자세히 설명해줘)"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-primary" id="enrichBtn" onclick="aiEnrich()">${ic('sparkle')}AI로 보완</button>
+        <button class="btn btn-outline" onclick="manualEnrich()">직접 추가</button>
+      </div>
+    </div>
     <button class="close-btn" onclick="closePanel()">닫기</button>`;
-  showOverlay();
+  showOverlay(skipHistory);
 }
 function closePanel(e){
   if (e && e.target !== document.getElementById('panelBg')) return;
@@ -799,16 +830,63 @@ async function analyzeArtwork(){
     document.getElementById('result-section').innerHTML = `<div class="result-box">${ic('warning')} 분석 실패: ${e.message}</div>`;
   } finally { btn.disabled = false; btn.innerHTML = ic('search') + '작품 분석하기'; }
 }
+let lastDetectResult = null;
 function showDetectResult(r){
+  lastDetectResult = r;
   const sec = document.getElementById('result-section');
   if (!r.isArtwork){ sec.innerHTML = `<div class="result-box">${r.message||'미술 작품을 인식할 수 없습니다.'}</div>`; return; }
   sec.innerHTML = `<div class="result-box">
+    ${imgBase64?`<img src="data:${imgMime};base64,${imgBase64}" style="width:100%;border-radius:10px;margin-bottom:10px;max-height:220px;object-fit:cover">`:''}
     <div style="font-size:1.05rem;font-weight:800">${r.title||''}</div>
     <div style="font-size:.85rem;color:var(--text2);margin-bottom:8px">${r.artist||''} · ${r.year||''} · ${r.movement||''}</div>
     <div style="font-size:.82rem;color:var(--text2);line-height:1.7;margin-bottom:8px">${r.description||''}</div>
     ${r.trivia?`<div style="font-size:.78rem;color:var(--text2);border-left:2px dashed var(--text3);padding-left:10px;display:flex;gap:6px">${ic('lightbulb')}<span>${r.trivia}</span></div>`:''}
-    <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="prefillFromDetect(${JSON.stringify(r).replace(/"/g,'&quot;')})">기록 탭에서 아카이빙하기 →</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="archiveDetectedArtwork()">${ic('check')}아카이브에 저장</button>
+    <button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="prefillFromDetect(lastDetectResult)">기록 탭에서 수정 후 추가</button>
   </div>`;
+}
+/* 감지 결과를 즉시 아카이브(로컬 DB)에 저장 — Archive 탭 · 역사 탭에 바로 반영됨 */
+function archiveDetectedArtwork(){
+  const r = lastDetectResult;
+  if (!r || !r.isArtwork) return;
+  const titleKo = (r.title||'').trim() || '제목 미상';
+  const artist = (r.artist||'').trim() || '작가 미상';
+  const year = (r.year||'').toString().trim();
+  const movement = (r.movement||'').trim();
+  const museum = (r.museum||'').trim();
+  const summary = (r.description||'').trim();
+  const trivia = (r.trivia||'').trim();
+  const today = new Date().toISOString().split('T')[0];
+
+  const artistId = 'user-artist-' + artist.replace(/\s+/g,'-').toLowerCase();
+  if (!getDB().artists.find(a=>a.name.ko===artist)){
+    LOCAL.new_artists.push({ id:artistId, name:{full:artist,ko:artist}, born:'', died:'', nationality:'', movement, bio:{early_life:'',career:'',personality:''} });
+  }
+  const id = 'detect-' + Date.now();
+  const artwork = {
+    id, title:{original:titleKo, ko:titleKo}, artist_id:artistId, year_created:year, medium:'', dimensions:'',
+    location:{museum, city:'', country:'', room:''}, movement,
+    description:{summary, symbolism:'', technique:'', appreciation_points: trivia?[trivia]:[], mysteries:[]},
+    historical_context:{period:'', year_context:'', social_background:''},
+    personal:{visited:true, visit_date:today, museum_visited:museum, memo:''},
+    tags:[movement].filter(Boolean), archived_date:today,
+    image: imgBase64 ? `data:${imgMime};base64,${imgBase64}` : '',
+    needs_enrichment:true, source:'detect'
+  };
+  LOCAL.new_artworks.push(artwork);
+  LOCAL.visit_log.unshift({ artwork_id:id, title:titleKo, artist, date:today, museum, memo:'감지 기능으로 아카이빙' });
+  saveLocal();
+
+  renderExplore(); renderTimeline('all'); renderLog(); renderRecentVisits();
+  const db = getDB();
+  document.getElementById('hdrBadge').innerHTML = ic('image') + db.artworks.length + ' · ' + ic('user') + db.artists.length;
+
+  showToast('아카이브에 저장되었습니다 — Archive · 역사에서 확인하세요');
+  document.getElementById('result-section').innerHTML += `
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-outline" onclick="switchTab('explore', document.querySelector('[data-s=explore]'))">Archive에서 보기 →</button>
+      <button class="btn btn-outline" onclick="switchTab('timeline', document.querySelector('[data-s=timeline]'))">역사에서 보기 →</button>
+    </div>`;
 }
 function prefillFromDetect(r){
   switchTab('log', document.querySelector('[data-s="log"]'));
@@ -818,6 +896,111 @@ function prefillFromDetect(r){
   document.getElementById('add-movement').value = r.movement||'';
   document.getElementById('add-museum').value = r.museum||'';
   document.getElementById('add-summary').value = r.description||'';
+}
+
+/* ══════════════════════════════════════════
+   AI 설명 보완 — 작품/화가 상세 패널에서 API로 내용 추가
+══════════════════════════════════════════ */
+let enrichCtx = null; // {type:'artwork'|'artist', id:...}
+
+async function callClaudeText(prompt){
+  if (!apiKey) throw new Error('감지 탭에서 API Key를 먼저 저장해주세요');
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{ 'x-api-key':apiKey, 'anthropic-version':'2023-06-01', 'content-type':'application/json', 'anthropic-dangerous-direct-browser-access':'true' },
+    body: JSON.stringify({ model:'claude-opus-4-8', max_tokens:1024, messages:[{role:'user', content:prompt}] })
+  });
+  if (!resp.ok){ const err = await resp.json(); throw new Error(err.error?err.error.message:'API 오류 '+resp.status); }
+  const data = await resp.json();
+  const raw = data.content[0].text.trim().replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'');
+  return JSON.parse(raw);
+}
+
+function aiEnrich(){
+  if (!enrichCtx) return;
+  if (!apiKey){ alert('먼저 감지 탭에서 API Key를 저장해주세요.'); return; }
+  const input = document.getElementById('enrichInput');
+  const req = input.value.trim();
+  if (!req){ showToast('요청 내용을 입력해주세요'); return; }
+  const btn = document.getElementById('enrichBtn'); btn.disabled = true; btn.innerHTML = '작성 중...';
+  const finish = () => { btn.disabled = false; btn.innerHTML = ic('sparkle') + 'AI로 보완'; };
+
+  if (enrichCtx.type === 'artwork'){
+    const a = getDB().artworks.find(x=>x.id===enrichCtx.id);
+    if (!a){ finish(); return; }
+    const d = a.description||{};
+    const context = `작품명: ${a.title.ko} (${a.title.original||''})\n화가: ${getArtistName(a.artist_id)}\n제작연도: ${a.year_created||''}\n사조: ${a.movement||''}\n기존 설명: ${d.summary||'(없음)'}\n기존 상징: ${d.symbolism||'(없음)'}\n기존 기법: ${d.technique||'(없음)'}`;
+    const prompt = `당신은 미술 해설가입니다. 아래 작품 정보를 참고하여 사용자 요청에 맞는 내용을 새로 작성해 주세요. 기존 내용과 중복되지 않게, 요청과 직접 관련된 필드만 채우고 나머지는 빈 값으로 두세요.\n\n${context}\n\n사용자 요청: "${req}"\n\n다음 JSON 형식으로만 응답하세요:\n{"summary_addition":"","symbolism_addition":"","technique_addition":"","appreciation_points":[],"historical_addition":""}`;
+    callClaudeText(prompt)
+      .then(r => applyArtworkEnrichment(a.id, r))
+      .catch(e => showToast('실패: ' + e.message))
+      .finally(finish);
+  } else {
+    const a = getArtist(enrichCtx.id);
+    if (!a){ finish(); return; }
+    const b = a.bio||{};
+    const context = `화가명: ${a.name.ko} (${a.name.full||''})\n생몰: ${a.born||''}–${a.died||''}\n국적: ${a.nationality||''}\n사조: ${a.movement||''}\n기존 생애/경력: ${b.career||'(없음)'}\n기존 성격/일화: ${b.personality||'(없음)'}`;
+    const prompt = `당신은 미술사 해설가입니다. 아래 화가 정보를 참고하여 사용자 요청에 맞는 내용을 새로 작성해 주세요. 기존 내용과 중복되지 않게, 요청과 직접 관련된 필드만 채우고 나머지는 빈 값으로 두세요.\n\n${context}\n\n사용자 요청: "${req}"\n\n다음 JSON 형식으로만 응답하세요:\n{"early_life_addition":"","career_addition":"","personality_addition":""}`;
+    callClaudeText(prompt)
+      .then(r => applyArtistEnrichment(a.id, r))
+      .catch(e => showToast('실패: ' + e.message))
+      .finally(finish);
+  }
+}
+
+function manualEnrich(){
+  if (!enrichCtx) return;
+  const input = document.getElementById('enrichInput');
+  const text = input.value.trim();
+  if (!text){ showToast('추가할 내용을 입력해주세요'); return; }
+  if (enrichCtx.type === 'artwork'){
+    applyArtworkEnrichment(enrichCtx.id, { summary_addition:text, symbolism_addition:'', technique_addition:'', appreciation_points:[], historical_addition:'' });
+  } else {
+    applyArtistEnrichment(enrichCtx.id, { early_life_addition:'', career_addition:text, personality_addition:'' });
+  }
+}
+
+function mergeText(existing, addition){
+  existing = existing||''; addition = (addition||'').trim();
+  if (!addition) return existing;
+  return existing ? existing + '\n\n' + addition : addition;
+}
+
+function applyArtworkEnrichment(id, r){
+  const a = getDB().artworks.find(x=>x.id===id);
+  if (!a) return;
+  const d = a.description||{};
+  const h = a.historical_context||{};
+  const newDesc = {
+    summary: mergeText(d.summary, r.summary_addition),
+    symbolism: mergeText(d.symbolism, r.symbolism_addition),
+    technique: mergeText(d.technique, r.technique_addition),
+    appreciation_points: (d.appreciation_points||[]).concat((r.appreciation_points||[]).filter(Boolean)),
+    mysteries: d.mysteries||[]
+  };
+  const newHist = { period: h.period||'', year_context: mergeText(h.year_context, r.historical_addition), social_background: h.social_background||'' };
+  LOCAL.artwork_edits[id] = { description: newDesc, historical_context: newHist };
+  saveLocal();
+  showToast('설명이 업데이트되었습니다');
+  renderExplore();
+  if (enrichCtx && enrichCtx.type==='artwork' && enrichCtx.id===id) openPanel(id, true);
+}
+
+function applyArtistEnrichment(id, r){
+  const a = getArtist(id);
+  if (!a) return;
+  const b = a.bio||{};
+  const newBio = {
+    early_life: mergeText(b.early_life, r.early_life_addition),
+    career: mergeText(b.career, r.career_addition),
+    later_life: b.later_life||'',
+    personality: mergeText(b.personality, r.personality_addition)
+  };
+  LOCAL.artist_edits[id] = { bio: newBio };
+  saveLocal();
+  showToast('화가 정보가 업데이트되었습니다');
+  renderExplore();
+  if (enrichCtx && enrichCtx.type==='artist' && enrichCtx.id===id) openArtistSheet(id, true);
 }
 
 init();
