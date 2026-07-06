@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Masterpiece">
 <meta name="theme-color" content="#0a0a0a">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{
   --bg:#0a0a0a; --bg2:#121212; --bg3:#1b1b1b; --card:#161616;
@@ -145,6 +147,14 @@ textarea.form-input{resize:none;min-height:70px;}
 .result-box{margin:0 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
 .hidden{display:none!important;}
 .export-btn{margin:16px;width:calc(100% - 32px);padding:11px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
+#mapView{background:var(--bg3);}
+.leaflet-popup-content-wrapper{background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:10px;}
+.leaflet-popup-tip{background:var(--bg2);}
+.leaflet-popup-content{margin:10px 12px;}
+.map-popup-museum{font-weight:800;font-size:.82rem;}
+.map-popup-count{color:var(--text2);font-size:.68rem;margin-bottom:5px;}
+.map-popup-work{font-size:.78rem;color:var(--hi);cursor:pointer;margin-top:5px;padding-top:5px;border-top:1px solid var(--border);}
+.map-popup-work:first-of-type{border-top:none;padding-top:0;}
 </style>
 </head>
 <body>
@@ -189,6 +199,7 @@ textarea.form-input{resize:none;min-height:70px;}
   <button class="nb on" data-s="home" onclick="switchTab('home',this)"><svg class="icon"><use href="#i-home"/></svg><span class="nb-l">홈</span></button>
   <button class="nb" data-s="explore" onclick="switchTab('explore',this)"><svg class="icon"><use href="#i-explore"/></svg><span class="nb-l">Archive</span></button>
   <button class="nb" data-s="timeline" onclick="switchTab('timeline',this)"><svg class="icon"><use href="#i-calendar"/></svg><span class="nb-l">역사</span></button>
+  <button class="nb" data-s="map" onclick="switchTab('map',this)"><svg class="icon"><use href="#i-map"/></svg><span class="nb-l">지도</span></button>
   <button class="nb" data-s="log" onclick="switchTab('log',this)"><svg class="icon"><use href="#i-notebook"/></svg><span class="nb-l">기록</span></button>
   <button class="nb" data-s="detect" onclick="switchTab('detect',this)"><svg class="icon"><use href="#i-scan"/></svg><span class="nb-l">감지</span></button>
 </div>
@@ -226,6 +237,12 @@ textarea.form-input{resize:none;min-height:70px;}
 <div id="tab-timeline" class="tab">
   <div class="frow" id="timeline-filters" style="margin-top:16px"></div>
   <div class="timeline-wrap" id="timelineWrap"></div>
+</div>
+
+<!-- ══════ MAP ══════ -->
+<div id="tab-map" class="tab">
+  <div id="mapEmptyNote" class="list-empty" style="display:none"><svg class="icon"><use href="#i-map"/></svg><br>좌표 정보가 있는 작품이 없습니다.</div>
+  <div id="mapView" style="width:100%;height:calc(100vh - var(--ht) - var(--st) - var(--nb) - var(--sb));"></div>
 </div>
 
 <!-- ══════ LOG (방문기록 + 새 작품 추가) ══════ -->
@@ -362,6 +379,73 @@ function findDuplicateArtist(name, excludeId){
 }
 
 /* ══════════════════════════════════════════
+   MAP — 소장 미술관 좌표 lookup (Leaflet + OpenStreetMap, API 키 불필요)
+══════════════════════════════════════════ */
+const MUSEUM_COORDS = {
+  "루브르 박물관 (Musée du Louvre)": {lat:48.8606, lng:2.3376},
+  "암스테르담 국립미술관 (Rijksmuseum)": {lat:52.3600, lng:4.8852},
+  "마우리츠하이스 왕립미술관 (Mauritshuis)": {lat:52.0799, lng:4.3134},
+  "프라도 미술관 (Museo del Prado)": {lat:40.4138, lng:-3.6921},
+  "오랑주리 미술관 (Musée de l'Orangerie)": {lat:48.8637, lng:2.3225},
+  "뉴욕 현대미술관 (MoMA)": {lat:40.7614, lng:-73.9776},
+  "벨베데레 궁전 (Österreichische Galerie Belvedere)": {lat:48.1913, lng:16.3808},
+  "노르웨이 국립미술관 (Nasjonalmuseet)": {lat:59.9113, lng:10.7284},
+  "레이나 소피아 국립미술관 (Museo Reina Sofía)": {lat:40.4084, lng:-3.6942},
+  "우피치 미술관, 피렌체": {lat:43.7678, lng:11.2553},
+  "시스티나 성당, 바티칸": {lat:41.9029, lng:12.4545},
+  "오르세 미술관, 파리": {lat:48.8600, lng:2.3266},
+  "보스턴 미술관": {lat:42.3394, lng:-71.0942},
+  "솔로몬 R. 구겐하임 미술관, 뉴욕": {lat:40.7830, lng:-73.9590},
+  "내셔널 갤러리 오브 아트, 워싱턴 D.C.": {lat:38.8913, lng:-77.0199}
+};
+function getMuseumCoords(museumName){
+  if (!museumName) return null;
+  if (MUSEUM_COORDS[museumName]) return MUSEUM_COORDS[museumName];
+  const norm = normStr(museumName);
+  for (const key in MUSEUM_COORDS){ if (normStr(key) === norm) return MUSEUM_COORDS[key]; }
+  return null;
+}
+
+let leafletMap = null;
+let mapMarkerLayer = null;
+function initMapIfNeeded(){
+  if (leafletMap || typeof L === 'undefined') return;
+  leafletMap = L.map('mapView', {zoomControl:true, worldCopyJump:true}).setView([35, 15], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(leafletMap);
+}
+function closeMapPopupAndOpen(id){
+  if (leafletMap) leafletMap.closePopup();
+  openPanel(id);
+}
+function renderMap(){
+  initMapIfNeeded();
+  if (!leafletMap) return;
+  if (mapMarkerLayer) leafletMap.removeLayer(mapMarkerLayer);
+  mapMarkerLayer = L.layerGroup().addTo(leafletMap);
+  const db = getDB();
+  const groups = {};
+  db.artworks.forEach(a => {
+    const museum = a.location && a.location.museum;
+    const coords = getMuseumCoords(museum);
+    if (!coords) return;
+    if (!groups[museum]) groups[museum] = { coords, museum, works: [] };
+    groups[museum].works.push(a);
+  });
+  const keys = Object.keys(groups);
+  document.getElementById('mapEmptyNote').style.display = keys.length ? 'none' : 'block';
+  keys.forEach(key => {
+    const g = groups[key];
+    const marker = L.marker([g.coords.lat, g.coords.lng]);
+    const listHtml = g.works.map(w => `<div class="map-popup-work" onclick="closeMapPopupAndOpen('${w.id}')">${w.title.ko}</div>`).join('');
+    marker.bindPopup(`<div class="map-popup-museum">${g.museum}</div><div class="map-popup-count">${g.works.length}점 소장</div>${listHtml}`);
+    marker.addTo(mapMarkerLayer);
+  });
+}
+
+/* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */
 function init(){
@@ -390,7 +474,7 @@ function init(){
 /* ══════════════════════════════════════════
    NAVIGATION (탭 전환 + 뒤로가기)
 ══════════════════════════════════════════ */
-const TABS = ['home','explore','timeline','log','detect'];
+const TABS = ['home','explore','timeline','map','log','detect'];
 let currentTab = 'home';
 
 function applyTabUI(name, btn){
@@ -403,6 +487,7 @@ function applyTabUI(name, btn){
 function switchTab(name, btn){
   applyTabUI(name, btn);
   if (name !== currentTab){ history.pushState({tab:name}, '', '#'+name); currentTab = name; }
+  if (name === 'map'){ renderMap(); setTimeout(()=>{ if (leafletMap) leafletMap.invalidateSize(); }, 60); }
 }
 function onPopState(e){
   document.getElementById('panelBg').classList.remove('on');
@@ -410,6 +495,7 @@ function onPopState(e){
   const state = e.state || {tab:'home'};
   currentTab = state.tab || 'home';
   applyTabUI(currentTab);
+  if (currentTab === 'map'){ renderMap(); setTimeout(()=>{ if (leafletMap) leafletMap.invalidateSize(); }, 60); }
 }
 
 /* ══════════════════════════════════════════
@@ -621,6 +707,7 @@ function closePanelSilent(){
 ══════════════════════════════════════════ */
 function refreshAfterDelete(){
   renderExplore(); renderTimeline('all'); renderLog(); renderRecentVisits();
+  if (leafletMap) renderMap();
   const db = getDB();
   document.getElementById('hdrBadge').innerHTML = ic('image') + db.artworks.length + ' · ' + ic('user') + db.artists.length;
 }
@@ -814,6 +901,7 @@ function submitAdd(){
   clearAddForm();
   showToast('로컬에 추가되었습니다 (내보내기 버튼으로 동기화하세요)');
   renderLog(); renderExplore(); renderRecentVisits();
+  if (leafletMap) renderMap();
 }
 
 /* ══════════════════════════════════════════
@@ -963,6 +1051,7 @@ function archiveDetectedArtwork(){
   saveLocal();
 
   renderExplore(); renderTimeline('all'); renderLog(); renderRecentVisits();
+  if (leafletMap) renderMap();
   const db = getDB();
   document.getElementById('hdrBadge').innerHTML = ic('image') + db.artworks.length + ' · ' + ic('user') + db.artists.length;
 
